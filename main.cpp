@@ -7,13 +7,12 @@
 #include <physics/octree.hpp>
 #include <glm/glm.hpp>
 
-
 int main()
 {
     namespace shapes = rtr::shapes;
     namespace phys = rtr::physics;
 
-    phys::ray r { {1, 1, 1}, glm::normalize(glm::vec3{ 1, 1, 1 }) };
+    phys::ray r { {1, 1, 1}, glm::normalize(glm::vec3{ -1, -1, -1 }) };
 
     shapes::sphere s { {0, 0, 0}, 3 };
     shapes::sphere s1 { { -2, -2, -2 }, 1};
@@ -31,6 +30,7 @@ int main()
 
     phys::octree oc { { 0, 0, 0}, { 8, 8, 8} };
     oc.add_level();
+    oc.insert(s1);
 
     if (phys::intersect(oc.bounding_box(), r))
     {
@@ -41,6 +41,11 @@ int main()
             {
                 std::cout << c.bounding_box() << '\n';
                 std::cout << "yayay\n";
+
+                c.for_shapes([](auto& shape)
+                {
+                    std::cout << "asd\n";
+                });
             }
         }
     }

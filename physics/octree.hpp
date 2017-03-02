@@ -11,7 +11,6 @@
 #include <boost/variant.hpp>
 #include <boost/container/static_vector.hpp>
 
-
 namespace rtr
 {
 namespace physics
@@ -38,6 +37,13 @@ public:
 
     const aabb& bounding_box() const { return box; }
     const bvector<octree>& get_children() const { return children; }
+
+    template <class FunT>
+    void for_shapes(FunT&& f) const
+    {
+        std::for_each(meshes.begin(), meshes.end(), f);
+        std::for_each(spheres.begin(), spheres.end(), f);
+    }
 
     void insert(const shapes::sphere& sphere);
     void insert(const shapes::mesh& mesh);

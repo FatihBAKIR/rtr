@@ -22,5 +22,7 @@ namespace physics
     struct ray_hit;
 
     struct aabb;
+
+    class octree;
 }
 }
