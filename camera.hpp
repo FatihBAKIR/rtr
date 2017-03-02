@@ -3,7 +3,7 @@
 //
 #pragma once
 
-#include "transform.hpp"
+#include <transform.hpp>
 #include <glm/glm.hpp>
 
 namespace rtr
@@ -42,7 +42,8 @@ public:
     camera(const glm::vec3& pos, const glm::vec3& up, const glm::vec3& gaze) :
             t{pos, up, -gaze, glm::cross(up, -gaze)} {}
 
-    const transform& transform() const {
+    const transform& get_transform() const
+    {
         return t;
     }
 };

@@ -24,7 +24,7 @@ namespace physics
         using std::runtime_error::runtime_error;
     };
 
-    collide_result intersect(const rtr::aabb& aabb, const rtr::sphere& sp)
+    collide_result intersect(const aabb& aabb, const shapes::sphere& sp)
     {
         float dmin = 0;
 
@@ -49,7 +49,7 @@ namespace physics
 
     }
 
-    collide_result intersect(const rtr::aabb& a, const rtr::aabb& b)
+    collide_result intersect(const aabb& a, const aabb& b)
     {
         if (std::abs(a.position[0] - b.position[0]) > (a.extent[0] + b.extent[0]) * 0.5f) return false;
         if (std::abs(a.position[1] - b.position[1]) > (a.extent[1] + b.extent[2]) * 0.5f) return false;
@@ -62,28 +62,25 @@ namespace physics
         throw not_implemented_error("aabb triangle intersect not implemented");
     }*/
 
-    collide_result intersect(const rtr::aabb& box, const rtr::ray& ray)
+    collide_result intersect(const aabb& box, const ray& ray)
     {
-        using std::min;
-        using std::max;
-
         const auto inv = glm::vec3(1, 1, 1) / ray.dir;
 
         float t1 = (box.min[0] - ray.origin[0]) * inv[0];
         float t2 = (box.max[0] - ray.origin[0]) * inv[0];
 
-        float tMin = min(t1, t2);
-        float tMax = max(t1, t2);
+        float tMin = std::min(t1, t2);
+        float tMax = std::max(t1, t2);
 
         for (int i = 1; i < 3; ++i) {
             t1 = (box.min[i] - ray.origin[i]) * inv[i];
             t2 = (box.max[i] - ray.origin[i]) * inv[i];
 
-            tMin = max(tMin, min(t1, t2));
-            tMax = min(tMax, max(t1, t2));
+            tMin = std::max(tMin, std::min(t1, t2));
+            tMax = std::min(tMax, std::max(t1, t2));
         }
 
-        return tMax >= max(tMin, 0.0f);
+        return tMax >= tMin;
     }
 }
 }

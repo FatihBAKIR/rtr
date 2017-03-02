@@ -21,8 +21,8 @@ struct ray
 
 struct ray_hit
 {
-    const ray ray;
-    const material& material;
+    const struct ray ray;
+    const class material& material;
     const glm::vec3 position;
     const glm::vec3 normal;
 };

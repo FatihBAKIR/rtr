@@ -13,6 +13,7 @@ namespace shapes
 {
     class sphere;
     class triangle;
+    class mesh;
 }
 
 namespace physics

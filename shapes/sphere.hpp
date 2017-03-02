@@ -22,11 +22,11 @@ public:
     sphere(const glm::vec3& p, float r) : pos(p), radius(r)
     {}
 
-    constexpr const glm::vec3& get_center() const { return pos; }
-    constexpr float get_radius() const { return radius; }
+    const glm::vec3& get_center() const { return pos; }
+    float get_radius() const { return radius; }
 
-    constexpr boost::optional<float> get_parameter(const physics::ray& ray) const;
-    constexpr physics::ray_hit intersect(const physics::ray& ray, float parameter) const;
+    boost::optional<float> get_parameter(const physics::ray& ray) const;
+    physics::ray_hit intersect(const physics::ray& ray, float parameter) const;
 };
 }
 }

@@ -6,18 +6,45 @@
 
 #include <rtr_fwd.hpp>
 #include <glm/vec3.hpp>
-#include <physics/collision.hpp>
 #include <physics/aabb.hpp>
+#include <boost/container/vector.hpp>
+#include <boost/variant.hpp>
+#include <boost/container/static_vector.hpp>
+
 
 namespace rtr
 {
+namespace physics
+{
 class octree
 {
+    template <class T>
+    using bvector = boost::container::vector<T>;
+
     aabb box;
+    bvector<octree> children;
+
+    bvector<const shapes::mesh*> meshes;
+    bvector<const shapes::sphere*> spheres;
+
+    void put(const shapes::sphere* s);
+    void put(const shapes::mesh* m);
+
+    template <class ShapeT>
+    void insert_impl(const ShapeT& shape);
 
 public:
-    void insert(const shapes::sphere& sphere);
-    void insert(const shapes::triangle& tri);
+    octree(const glm::vec3& center, const glm::vec3& extent);
 
+    const aabb& bounding_box() const { return box; }
+    const bvector<octree>& get_children() const { return children; }
+
+    void insert(const shapes::sphere& sphere);
+    void insert(const shapes::mesh& mesh);
+
+    void add_level();
+
+    ~octree();
 };
+}
 }
