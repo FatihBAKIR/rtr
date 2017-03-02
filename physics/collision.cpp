@@ -80,7 +80,7 @@ namespace physics
             tMax = std::min(tMax, std::max(t1, t2));
         }
 
-        return tMax >= tMin;
+        return tMax >= std::max(.0f, tMin);
     }
 }
 }
