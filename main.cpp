@@ -32,6 +32,14 @@ int main()
     oc.add_level();
     oc.insert(s1);
 
+    std::array<glm::vec3, 3> tri = {
+        glm::vec3{ 5, 5, 5 },
+        glm::vec3{ 6, 5, 5 },
+        glm::vec3{ 5, 6, 5 }
+    };
+
+    std::cout << "tri: " << phys::intersect(a, tri) << '\n';
+
     if (phys::intersect(oc.bounding_box(), r))
     {
         std::cout << "yay\n";

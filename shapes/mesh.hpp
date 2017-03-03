@@ -4,24 +4,25 @@
 
 #pragma once
 
-#include <physics/aabb.hpp>
 #include <boost/container/vector.hpp>
 #include <shapes/triangle.hpp>
+#include <physics/octree.hpp>
+#include <gsl/gsl>
 
 namespace rtr
 {
 namespace shapes
 {
 class mesh {
-    physics::aabb bounding;
-    boost::container::vector<triangle> tris;
-
+    physics::octree part;
 
 public:
 
+    mesh(const gsl::span<vertex>& vertices);
+
     const physics::aabb& bounding_box() const
     {
-        return bounding;
+        return part.bounding_box();
     }
 };
 }

@@ -7,7 +7,6 @@
 
 #include <rtr_fwd.hpp>
 #include <boost/optional.hpp>
-#include <physics/ray.hpp>
 #include <physics/octree.hpp>
 
 namespace rtr
@@ -15,9 +14,15 @@ namespace rtr
 class scene
 {
     physics::octree part;
+    bvector<vertex> vertices;
 
+    bvector<shapes::mesh> meshes;
+    bvector<shapes::sphere> spheres;
 
 public:
+
+    scene();
+    ~scene();
 
     boost::optional<physics::ray_hit> ray_cast(const physics::ray& ray) const;
 

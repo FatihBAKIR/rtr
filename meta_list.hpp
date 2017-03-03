@@ -277,10 +277,4 @@ namespace png2
     {
         return containers::vector<>{};
     }
-
-    template <class... Ts>
-    auto vector(Ts&&...)
-    {
-        
-    }
 }

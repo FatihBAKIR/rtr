@@ -12,6 +12,5 @@ namespace rtr
 struct vertex
 {
     const glm::vec3 position;
-    const glm::vec2 uv;
 };
 }

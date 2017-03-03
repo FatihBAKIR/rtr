@@ -15,7 +15,6 @@ namespace shapes
 class triangle
 {
     std::array<vertex*, 3> vertices;
-    struct material* material;
 
 public:
     boost::optional<float> get_parameter(const physics::ray& ray) const;

@@ -2,8 +2,13 @@
 // Created by Mehmet Fatih BAKIR on 26/02/2017.
 //
 
+#include <boost/container/container_fwd.hpp>
+
 namespace rtr
 {
+template <class T>
+using bvector = boost::container::vector<T>;
+
 struct transform;
 struct material;
 

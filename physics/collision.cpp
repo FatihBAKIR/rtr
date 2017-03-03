@@ -82,5 +82,6 @@ namespace physics
 
         return tMax >= std::max(.0f, tMin);
     }
+
 }
 }

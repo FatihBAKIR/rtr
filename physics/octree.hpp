@@ -17,9 +17,6 @@ namespace physics
 {
 class octree
 {
-    template <class T>
-    using bvector = boost::container::vector<T>;
-
     aabb box;
     bvector<octree> children;
 
