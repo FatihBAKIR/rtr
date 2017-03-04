@@ -94,7 +94,7 @@ namespace rtr
 {
 namespace physics
 {
-    bool intersect(const rtr::physics::aabb& box, gsl::span<glm::vec3> triverts) {
+    bool intersect(const rtr::physics::aabb& box, gsl::span<const glm::vec3> triverts) {
     float min, max, p0, p1, p2, rad, fex, fey, fez;
 
     auto boxhalfsize = box.extent * 0.5f;

@@ -7,9 +7,61 @@
 #include <shapes/mesh.hpp>
 #include <shapes/sphere.hpp>
 #include <vertex.hpp>
+#include <queue>
 
 boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::ray &ray) const {
-    return {};
+    using const_shapes = png::map_t<png::mapper<std::add_const_t>, shape_list>;
+    using shape_pointers = png::map_t<png::mapper<std::add_pointer_t>, const_shapes>;
+    using shape_variant = png::convert_t<boost::variant, shape_pointers>;
+
+    boost::optional<shape_variant> cur_hit;
+    float cur_param = std::numeric_limits<float>::infinity();
+
+    std::queue<const octree_type*> q;
+    q.push(&part);
+
+    using physics::intersect;
+
+    while (!q.empty())
+    {
+        const octree_type* oc = q.front();
+        q.pop();
+        if (!intersect(oc->bounding_box(), ray))
+        {
+            continue;
+        }
+
+        for (auto& c : oc->get_children())
+        {
+            q.push(&c);
+        }
+
+        oc->for_shapes([&](auto shape)
+        {
+            auto p = shape->get_parameter(ray);
+            if (p)
+            {
+                auto param = *p;
+                if (param < cur_param)
+                {
+                    cur_param = param;
+                    cur_hit = shape;
+                }
+            }
+        });
+    }
+
+    if (!cur_hit)
+    {
+        return {};
+    }
+
+    boost::optional<rtr::physics::ray_hit> res;
+    boost::apply_visitor([&](auto shape)
+    {
+        res = rtr::physics::ray_hit{ ray, {}, {}, {}, cur_param };
+    }, *cur_hit);
+    return res;
 }
 
 rtr::scene::scene() : part({}, {})

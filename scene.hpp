@@ -13,11 +13,13 @@ namespace rtr
 {
 class scene
 {
-    physics::octree part;
-    bvector<vertex> vertices;
+    using shape_list = png::list<shapes::mesh, shapes::sphere>;
+    using octree_type = png::convert_t<physics::octree, shape_list>;
+    using vectors = png::map_t<png::mapper<bvector>, shape_list>;
+    using vector_tuple = png::convert_t<boost::fusion::vector, vectors>;
 
-    bvector<shapes::mesh> meshes;
-    bvector<shapes::sphere> spheres;
+    octree_type part;
+    vector_tuple shapes;
 
 public:
 
@@ -29,7 +31,10 @@ public:
     template <class T>
     void insert(T&& obj)
     {
-
+        constexpr auto index = png::index_of_t<std::decay_t<T>, shape_list>();
+        auto& v = boost::fusion::at_c<index>(shapes);
+        v.push_back(std::forward<T>(obj));
+        part.insert(v.back());
     }
 };
 }

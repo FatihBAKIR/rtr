@@ -13,18 +13,19 @@ namespace physics
 {
 struct ray
 {
-    const glm::vec3 origin;
-    const glm::vec3 dir;
+    glm::vec3 origin;
+    glm::vec3 dir;
 
     constexpr ray(const glm::vec3& origin, const glm::vec3& dir) : origin{origin}, dir{dir} {}
 };
 
 struct ray_hit
 {
-    const struct ray ray;
-    const class material& material;
-    const glm::vec3 position;
-    const glm::vec3 normal;
+    struct ray ray;
+    class material* material;
+    glm::vec3 position;
+    glm::vec3 normal;
+    float parameter;
 };
 }
 }

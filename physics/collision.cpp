@@ -5,7 +5,7 @@
 #include <physics/collision.hpp>
 #include <physics/aabb.hpp>
 #include <shapes/sphere.hpp>
-#include <shapes/triangle.hpp>
+#include <shapes/mesh.hpp>
 #include <physics/ray.hpp>
 #include <cmath>
 
@@ -57,10 +57,10 @@ namespace physics
         return true;
     }
 
-    /*collide_result intersect(const rtr::aabb&, const rtr::triangle& tri)
+    collide_result intersect(const aabb& box, const shapes::mesh& mesh)
     {
-        throw not_implemented_error("aabb triangle intersect not implemented");
-    }*/
+        return intersect(box, mesh.bounding_box());
+    }
 
     collide_result intersect(const aabb& box, const ray& ray)
     {

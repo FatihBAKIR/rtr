@@ -4,30 +4,32 @@
 
 #include <boost/container/container_fwd.hpp>
 
-namespace rtr
-{
-template <class T>
-using bvector = boost::container::vector<T>;
+namespace rtr {
+    template<class T>
+    using bvector = boost::container::vector<T>;
 
-struct transform;
-struct material;
+    struct transform;
+    struct material;
 
-struct vertex;
+    struct vertex;
 
-namespace shapes
-{
-    class sphere;
-    class triangle;
-    class mesh;
-}
+    class scene;
 
-namespace physics
-{
-    struct ray;
-    struct ray_hit;
+    namespace shapes {
+        class sphere;
 
-    struct aabb;
+        class triangle;
 
-    class octree;
-}
+        class mesh;
+    }
+
+    namespace physics {
+        struct ray;
+        struct ray_hit;
+
+        struct aabb;
+
+        template<class...>
+        class octree;
+    }
 }

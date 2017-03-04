@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <boost/container/vector.hpp>
+#include <boost/container/container_fwd.hpp>
 #include <shapes/triangle.hpp>
 #include <physics/octree.hpp>
 #include <gsl/gsl>
@@ -14,11 +14,16 @@ namespace rtr
 namespace shapes
 {
 class mesh {
-    physics::octree part;
+    boost::container::vector<triangle> tris;
+    physics::octree<triangle> part;
 
 public:
 
-    mesh(const gsl::span<vertex>& vertices);
+    mesh(boost::container::vector<triangle> tris);
+    ~mesh();
+
+    boost::optional<float> get_parameter(const physics::ray& ray) const;
+    physics::ray_hit intersect(const physics::ray& ray, float parameter) const;
 
     const physics::aabb& bounding_box() const
     {

@@ -7,4 +7,4 @@
 #include <rtr_fwd.hpp>
 #include <meta_list.hpp>
 
-using shapes = png::list<png2::type<rtr::shapes::sphere>, png2::type<rtr::shapes::mesh>>;
+using shapes = png::list<png2::ctype<rtr::shapes::sphere>, png2::ctype<rtr::shapes::mesh>>;

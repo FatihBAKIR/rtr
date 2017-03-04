@@ -204,7 +204,7 @@ namespace png
 namespace png2
 {
     template <class T>
-    struct type
+    struct ctype
     {
         using type = T;
     };
@@ -273,7 +273,7 @@ namespace png2
 
     }
 
-    auto vector()
+    constexpr inline auto vector()
     {
         return containers::vector<>{};
     }

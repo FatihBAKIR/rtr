@@ -16,10 +16,11 @@ class sphere
 {
     glm::vec3 pos;
     float radius;
+    float r2;
 
 public:
 
-    sphere(const glm::vec3& p, float r) : pos(p), radius(r)
+    sphere(const glm::vec3& p, float r) : pos(p), radius(r), r2(r * r)
     {}
 
     const glm::vec3& get_center() const { return pos; }
