@@ -18,9 +18,11 @@ class sphere
     float radius;
     float r2;
 
+    const material* mat;
+
 public:
 
-    sphere(const glm::vec3& p, float r) : pos(p), radius(r), r2(r * r)
+    sphere(const glm::vec3& p, float r, const material* m) : pos(p), radius(r), r2(r * r), mat(m)
     {}
 
     const glm::vec3& get_center() const { return pos; }

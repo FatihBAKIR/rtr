@@ -3,8 +3,10 @@
 //
 #pragma once
 
+#include <rtr_fwd.hpp>
 #include <transform.hpp>
 #include <glm/glm.hpp>
+#include <boost/gil/gil_all.hpp>
 
 namespace rtr
 {
@@ -21,15 +23,17 @@ struct im_plane
     long width;
     long height;
 
-    float pixel_width() const {
-        return (right - left) / width;
+    float pix_w;
+    float pix_h;
+
+    im_plane(float left, float right, float top, float bottom, float dist, long im_w, long im_h)
+        : left(left), right(right), top(top), bottom(bottom), dist(dist), width(im_w), height(im_h)
+    {
+        pix_w = (right - left) / width;
+        pix_h = (top - bottom) / height;
     }
 
-    float pixel_height() const {
-        return (top - bottom) / height;
-    }
-
-    glm::vec3 get_top_left(const transform& of) {
+    glm::vec3 get_top_left(const transform& of) const {
         return of.position - of.forward * dist + of.right * left + of.up * top;
     }
 };
@@ -37,10 +41,13 @@ struct im_plane
 class camera
 {
     const transform t;
+    im_plane plane;
 
 public:
-    camera(const glm::vec3& pos, const glm::vec3& up, const glm::vec3& gaze) :
-            t{pos, up, -gaze, glm::cross(up, -gaze)} {}
+    camera(const glm::vec3& pos, const glm::vec3& up, const glm::vec3& gaze, const im_plane& p) :
+            t{pos, up, -gaze, glm::cross(up, -gaze)}, plane{p} {}
+
+    boost::gil::rgb8_image_t render(const scene& scene) const;
 
     const transform& get_transform() const
     {

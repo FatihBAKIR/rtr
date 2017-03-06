@@ -46,5 +46,10 @@ namespace shapes
 
         return root;
     }
+
+    physics::ray_hit sphere::intersect(const physics::ray& ray, float parameter) const
+    {
+        return physics::ray_hit{ ray, mat, {}, {}, parameter };
+    }
 }
 }

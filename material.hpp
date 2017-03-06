@@ -4,10 +4,12 @@
 
 #pragma once
 
+#include <glm/vec3.hpp>
+
 namespace rtr
 {
-namespace material
-{
-
-}
+    struct material
+    {
+        glm::vec3 diffuse;
+    };
 }

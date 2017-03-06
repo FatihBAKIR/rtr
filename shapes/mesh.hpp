@@ -14,12 +14,17 @@ namespace rtr
 namespace shapes
 {
 class mesh {
+
+    using octree_type = physics::octree<triangle>;
+
     boost::container::vector<triangle> tris;
-    physics::octree<triangle> part;
+    octree_type part;
+
+    const material* mat;
 
 public:
 
-    mesh(boost::container::vector<triangle> tris);
+    mesh(boost::container::vector<triangle> tris, const material* mat);
     ~mesh();
 
     boost::optional<float> get_parameter(const physics::ray& ray) const;

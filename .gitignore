@@ -78,3 +78,4 @@ fabric.properties
 *.app
 
 cmake-build-debug/
+cmake-build-release/

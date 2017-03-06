@@ -14,6 +14,7 @@ namespace rtr {
     struct vertex;
 
     class scene;
+    class camera;
 
     namespace shapes {
         class sphere;

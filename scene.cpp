@@ -26,6 +26,7 @@ boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::
     {
         const octree_type* oc = q.front();
         q.pop();
+
         if (!intersect(oc->bounding_box(), ray))
         {
             continue;
@@ -59,14 +60,26 @@ boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::
     boost::optional<rtr::physics::ray_hit> res;
     boost::apply_visitor([&](auto shape)
     {
-        res = rtr::physics::ray_hit{ ray, {}, {}, {}, cur_param };
+        res = shape->intersect(ray, cur_param);
     }, *cur_hit);
     return res;
 }
 
-rtr::scene::scene() : part({}, {})
+rtr::scene::scene() : part({0,0,0}, {64, 64, 64})
 {
 
+}
+
+void rtr::scene::finalize()
+{
+
+    boost::fusion::for_each(shapes, [&](auto& vector)
+    {
+        std::for_each(vector.begin(), vector.end(), [&](auto& elem)
+        {
+            part.insert(elem);
+        });
+    });
 }
 
 rtr::scene::~scene() = default;

@@ -3,7 +3,9 @@
 //
 
 #include <iostream>
-#include "mesh.hpp"
+#include <queue>
+#include <shapes/mesh.hpp>
+#include <physics/ray.hpp>
 
 static std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
 {
@@ -58,20 +60,67 @@ namespace shapes
 
         return partition;
     }
+
+
+    physics::ray_hit mesh::intersect(const physics::ray& ray, float parameter) const
+    {
+        return physics::ray_hit{ ray, mat, {}, {}, parameter };
+    }
+
+    mesh::~mesh() = default;
+
+    mesh::mesh(boost::container::vector<triangle> tris, const material* m)
+            : tris(std::move(tris)), part(partition(this->tris)), mat(m)
+    {
+    }
+
+    boost::optional<float> mesh::get_parameter(const rtr::physics::ray& ray) const
+    {
+        float cur_param = std::numeric_limits<float>::infinity();
+        const triangle* cur_hit = nullptr;
+
+        std::queue<const octree_type*> q;
+        q.push(&part);
+
+        using physics::intersect;
+
+        while (!q.empty())
+        {
+            const octree_type* oc = q.front();
+            q.pop();
+
+            if (!intersect(oc->bounding_box(), ray))
+            {
+                continue;
+            }
+
+            for (auto& c : oc->get_children())
+            {
+                q.push(&c);
+            }
+
+            oc->for_shapes([&](auto shape)
+            {
+                auto p = shape->get_parameter(ray);
+                if (p)
+                {
+                    auto param = *p;
+                    if (param < cur_param)
+                    {
+                        cur_param = param;
+                        cur_hit = shape;
+                    }
+                }
+            });
+        }
+
+        if (!cur_hit)
+        {
+            return {};
+        }
+
+        return cur_param;
+    }
 }
 }
 
-rtr::shapes::mesh::~mesh()
-{
-
-}
-
-rtr::shapes::mesh::mesh(boost::container::vector<rtr::shapes::triangle> tris)
-    : tris(std::move(tris)), part(partition(this->tris))
-{
-}
-
-boost::optional<float> rtr::shapes::mesh::get_parameter(const rtr::physics::ray& ray) const
-{
-    return boost::optional<float>();
-}

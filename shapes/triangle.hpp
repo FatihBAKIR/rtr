@@ -17,7 +17,16 @@ namespace shapes
 {
     class triangle
     {
-        std::array<glm::vec3, 3> vertices;
+        union
+        {
+            std::array<glm::vec3, 3> vertices;
+            struct
+            {
+                glm::vec3 a;
+                glm::vec3 b;
+                glm::vec3 c;
+            };
+        };
 
     public:
 

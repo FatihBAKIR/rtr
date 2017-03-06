@@ -13,7 +13,7 @@ namespace rtr
 {
 class scene
 {
-    using shape_list = png::list<shapes::mesh, shapes::sphere>;
+    using shape_list = png::list<shapes::sphere, shapes::mesh>;
     using octree_type = png::convert_t<physics::octree, shape_list>;
     using vectors = png::map_t<png::mapper<bvector>, shape_list>;
     using vector_tuple = png::convert_t<boost::fusion::vector, vectors>;
@@ -34,7 +34,8 @@ public:
         constexpr auto index = png::index_of_t<std::decay_t<T>, shape_list>();
         auto& v = boost::fusion::at_c<index>(shapes);
         v.push_back(std::forward<T>(obj));
-        part.insert(v.back());
     }
+
+    void finalize();
 };
 }
