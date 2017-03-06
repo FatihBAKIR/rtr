@@ -28,7 +28,7 @@ static std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
 int main()
 {
 
-    read_scene("/Users/fatih/Downloads/795_input_set_01/simple.xml");
+    read_scene("C:/Users/Fatih/Downloads/795_input_set_01/simple.xml");
     return 0;
 
     namespace shapes = rtr::shapes;
@@ -44,7 +44,7 @@ int main()
     shapes::triangle t1 {{ glm::vec3{-100, 0, 100}, {100, 0, -100}, {-100, 0, -100} }};
     shapes::mesh m ({ t, t1 }, &pink);
 
-    rtr::scene scene;
+    rtr::scene scene ({}, {64, 64, 64});
     scene.insert(s);
     scene.insert(s1);
     scene.insert(m);

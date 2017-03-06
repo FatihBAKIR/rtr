@@ -21,10 +21,10 @@ namespace rtr {
 
         boost::optional<float> triangle::get_parameter(const physics::ray& ray) const
         {
-            auto a_c1 = a - b;
-            auto a_c2 = a - c;
+            auto a_c1 = verts.a - verts.b;
+            auto a_c2 = verts.a - verts.c;
             auto& a_c3 = ray.dir;
-            auto b = a - ray.origin;
+            auto b = verts.a - ray.origin;
 
             auto detA = determinant(a_c1, a_c2, a_c3);
             auto beta = determinant(b, a_c2, a_c3) / detA;

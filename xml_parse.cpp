@@ -17,16 +17,16 @@
 #include <material.hpp>
 
 namespace xml = tinyxml2;
+
 rtr::camera read_camera(const xml::XMLElement* elem)
 {
-    auto get_text = [&](const char* name)
-    {
+    auto get_text = [&](const char* name) {
         return elem->FirstChildElement(name)->GetText();
     };
 
     glm::vec3 pos, up, gaze;
 
-    std::istringstream iss (get_text("Position"));
+    std::istringstream iss(get_text("Position"));
     iss >> pos[0] >> pos[1] >> pos[2];
 
     iss = std::istringstream(get_text("Up"));
@@ -47,7 +47,7 @@ rtr::camera read_camera(const xml::XMLElement* elem)
     iss = std::istringstream(get_text("ImageResolution"));
     iss >> width >> height;
 
-    rtr::im_plane plane {left, right, top, bottom, dist, width, height};
+    rtr::im_plane plane{left, right, top, bottom, dist, width, height};
     return {pos, up, gaze, plane};
 }
 
@@ -70,14 +70,11 @@ void read_objects(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, rtr::
 
     glm::vec3 scene_min, scene_max;
 
-    for (auto s = elem->FirstChildElement(); s; s = s->NextSiblingElement())
-    {
-        if (s->Name() == std::string("Mesh"))
-        {
+    for (auto s = elem->FirstChildElement(); s; s = s->NextSiblingElement()) {
+        if (s->Name()==std::string("Mesh")) {
 
         }
-        else if (s->Name() == std::string("Sphere"))
-        {
+        else if (s->Name()==std::string("Sphere")) {
             sc.insert(read_sphere(s, verts, nullptr));
         }
     }
@@ -101,13 +98,35 @@ void read_scene(const std::string& path)
 
     std::vector<rtr::camera> cams;
     auto cameras = root->FirstChildElement("Cameras");
-    for (auto c = cameras->FirstChildElement(); c; c = c->NextSiblingElement())
-    {
+    for (auto c = cameras->FirstChildElement(); c; c = c->NextSiblingElement()) {
         cams.push_back(read_camera(c));
     }
 
+    glm::vec3 min = { 10000, 10000, 10000 }, max = { -10000, -10000, -10000 };
+
+    auto up_min_max = [&](const glm::vec3& vert) {
+        for (int j = 0; j<3; ++j) {
+            if (min[j]>vert[j]) {
+                min[j] = vert[j];
+            }
+            if (max[j]<vert[j]) {
+                max[j] = vert[j];
+            }
+        }
+    };
+
     std::vector<glm::vec3> vert_pos;
     auto vert_text = root->FirstChildElement("VertexData")->GetText();
-    std::istringstream iss (vert_text);
-    for (glm::vec3 v; iss >> v[0] >> v[1] >> v[2]; vert_pos.push_back(v));
+    std::istringstream iss(vert_text);
+    for (glm::vec3 v; iss >> v[0] >> v[1] >> v[2];) {
+        vert_pos.push_back(v);
+        up_min_max(v);
+    }
+
+    glm::vec3 center = (min + max) * 0.5f;
+    glm::vec3 ext = max - min;
+
+    rtr::scene s {center, ext};
+
+    std::cout << '\n';
 }

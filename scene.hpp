@@ -23,7 +23,7 @@ class scene
 
 public:
 
-    scene();
+    scene(const glm::vec3& center, const glm::vec3& extent);
     ~scene();
 
     boost::optional<physics::ray_hit> ray_cast(const physics::ray& ray) const;

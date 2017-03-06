@@ -65,7 +65,7 @@ boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::
     return res;
 }
 
-rtr::scene::scene() : part({0,0,0}, {64, 64, 64})
+rtr::scene::scene(const glm::vec3& c, const glm::vec3& e) : part(c, e)
 {
 
 }
