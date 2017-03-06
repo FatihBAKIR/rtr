@@ -11,5 +11,11 @@ namespace rtr
     struct material
     {
         glm::vec3 diffuse;
+        glm::vec3 specular;
+        glm::vec3 ambient;
+
+        float phong;
+
+        long id;
     };
 }

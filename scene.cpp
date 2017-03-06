@@ -65,7 +65,8 @@ boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::
     return res;
 }
 
-rtr::scene::scene(const glm::vec3& c, const glm::vec3& e) : part(c, e)
+rtr::scene::scene(const glm::vec3& c, const glm::vec3& e, const std::unordered_map<long, rtr::material> mats)
+        : part(c, e), mats(std::move(mats))
 {
 
 }

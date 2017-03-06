@@ -8,6 +8,8 @@
 #include <rtr_fwd.hpp>
 #include <boost/optional.hpp>
 #include <physics/octree.hpp>
+#include <unordered_map>
+#include <material.hpp>
 
 namespace rtr
 {
@@ -21,12 +23,16 @@ class scene
     octree_type part;
     vector_tuple shapes;
 
+    std::unordered_map<long, material> mats;
+
 public:
 
-    scene(const glm::vec3& center, const glm::vec3& extent);
+    scene(const glm::vec3& center, const glm::vec3& extent, std::unordered_map<long, material> mats);
     ~scene();
 
     boost::optional<physics::ray_hit> ray_cast(const physics::ray& ray) const;
+
+    auto& materials() const { return mats; }
 
     template <class T>
     void insert(T&& obj)

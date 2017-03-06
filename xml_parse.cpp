@@ -15,6 +15,9 @@
 #include <shapes/mesh.hpp>
 
 #include <material.hpp>
+#include <3rd_party/tinyxml2/tinyxml2.h>
+#include <unordered_map>
+#include <bits/unordered_map.h>
 
 namespace xml = tinyxml2;
 
@@ -51,7 +54,7 @@ rtr::camera read_camera(const xml::XMLElement* elem)
     return {pos, up, gaze, plane};
 }
 
-rtr::shapes::sphere read_sphere(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, gsl::span<rtr::material> mats)
+rtr::shapes::sphere read_sphere(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const std::unordered_map<long, rtr::material>& mats)
 {
     long mat_id;
     long vert_id;
@@ -61,26 +64,68 @@ rtr::shapes::sphere read_sphere(const xml::XMLElement* elem, gsl::span<glm::vec3
     vert_id = elem->FirstChildElement("Center")->Int64Text();
     mat_id = elem->FirstChildElement("Material")->Int64Text();
 
-    return rtr::shapes::sphere(verts[vert_id], radius, &mats[mat_id]);
+    auto mat_it = mats.find(mat_id);
+    return rtr::shapes::sphere(verts[vert_id], radius, &(*mat_it).second);
 }
 
-void read_objects(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, rtr::scene& sc)
+rtr::shapes::mesh read_mesh(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const std::unordered_map<long, rtr::material>& mats)
+{
+    long mat_id;
+
+    mat_id = elem->FirstChildElement("Material")->Int64Text();
+    boost::container::vector<rtr::shapes::triangle> faces;
+
+    auto vert_text = elem->FirstChildElement("Faces")->GetText();
+    std::istringstream iss(vert_text);
+    for (std::array<long, 3> v; iss >> v[0] >> v[1] >> v[2];) {
+        faces.emplace_back(std::array<glm::vec3, 3>{verts[v[0]], verts[v[1]], verts[v[2]]});
+    }
+
+    auto mat_it = mats.find(mat_id);
+    return { faces, &(*mat_it).second };
+}
+
+void read_objects(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const std::unordered_map<long, rtr::material>& mats, rtr::scene& sc)
 {
     using namespace rtr::shapes;
 
     glm::vec3 scene_min, scene_max;
 
     for (auto s = elem->FirstChildElement(); s; s = s->NextSiblingElement()) {
-        if (s->Name()==std::string("Mesh")) {
-
+        if (s->Name()==std::string("Mesh") || s->Name() == std::string("Triangle")) {
+            sc.insert(read_mesh(s, verts, mats));
         }
         else if (s->Name()==std::string("Sphere")) {
-            sc.insert(read_sphere(s, verts, nullptr));
+            sc.insert(read_sphere(s, verts, mats));
         }
     }
 }
 
-void read_scene(const std::string& path)
+rtr::material read_material(const xml::XMLElement* elem)
+{
+    auto get_text = [&](const char* name) {
+        return elem->FirstChildElement(name)->GetText();
+    };
+
+    rtr::material m;
+
+    m.id = elem->Int64Attribute("id");
+
+    std::istringstream iss(get_text("AmbientReflectance"));
+    iss >> m.ambient[0] >> m.ambient[1] >> m.ambient[2];
+
+    iss = std::istringstream(get_text("DiffuseReflectance"));
+    iss >> m.diffuse[0] >> m.diffuse[1] >> m.diffuse[2];
+
+    iss = std::istringstream(get_text("SpecularReflectance"));
+    iss >> m.specular[0] >> m.specular[1] >> m.specular[2];
+
+    m.phong = elem->FirstChildElement("PhongExponent")->FloatText();
+
+    return m;
+}
+
+std::pair<rtr::scene, std::vector<rtr::camera>> read_scene(const std::string& path)
 {
     namespace xml = tinyxml2;
 
@@ -102,6 +147,13 @@ void read_scene(const std::string& path)
         cams.push_back(read_camera(c));
     }
 
+    std::unordered_map<long, rtr::material> mats;
+    auto materials = root->FirstChildElement("Materials");
+    for (auto c = materials->FirstChildElement(); c; c = c->NextSiblingElement()) {
+        auto&& m = read_material(c);
+        mats.emplace(m.id, std::move(m));
+    }
+
     glm::vec3 min = { 10000, 10000, 10000 }, max = { -10000, -10000, -10000 };
 
     auto up_min_max = [&](const glm::vec3& vert) {
@@ -115,7 +167,7 @@ void read_scene(const std::string& path)
         }
     };
 
-    std::vector<glm::vec3> vert_pos;
+    std::vector<glm::vec3> vert_pos (1);
     auto vert_text = root->FirstChildElement("VertexData")->GetText();
     std::istringstream iss(vert_text);
     for (glm::vec3 v; iss >> v[0] >> v[1] >> v[2];) {
@@ -126,7 +178,11 @@ void read_scene(const std::string& path)
     glm::vec3 center = (min + max) * 0.5f;
     glm::vec3 ext = max - min;
 
-    rtr::scene s {center, ext};
+    rtr::scene s {center, ext, std::move(mats)};
 
-    std::cout << '\n';
+    auto objs_root = root->FirstChildElement("Objects");
+
+    read_objects(objs_root, vert_pos, s.materials(), s);
+
+    return std::make_pair(s, cams);
 }

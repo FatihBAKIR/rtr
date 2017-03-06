@@ -27,35 +27,36 @@ static std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
 
 int main()
 {
-
-    read_scene("C:/Users/Fatih/Downloads/795_input_set_01/simple.xml");
+    auto r = read_scene("/home/fatih/Downloads/795_input_set_01/simple.xml");
+    r.first.finalize();
+    auto ima = r.second[0].render(r.first);
+    boost::gil::png_write_view("hai.png", boost::gil::view(ima));
     return 0;
 
-    namespace shapes = rtr::shapes;
-    namespace phys = rtr::physics;
-
-    rtr::material white { { 1.f, 1.f, 1.f } };
-    rtr::material pink { { 1.f, .5f, .5f } };
-
-    shapes::sphere s { {0, 5, 0}, 5, &white };
-    shapes::sphere s1 { { -2, -2, -2 }, 1, &white};
-
-    shapes::triangle t {{ glm::vec3{100, 0, -100}, {-100, 0, 100}, {100, 0, 100} }};
-    shapes::triangle t1 {{ glm::vec3{-100, 0, 100}, {100, 0, -100}, {-100, 0, -100} }};
-    shapes::mesh m ({ t, t1 }, &pink);
-
-    rtr::scene scene ({}, {64, 64, 64});
-    scene.insert(s);
-    scene.insert(s1);
-    scene.insert(m);
-
-    scene.finalize();
-
-    rtr::im_plane im_p { -1, 1, 1, -1, 1, 800, 800 };
-
-    rtr::camera cam ({0, 5, 25}, {0, 1, 0}, {0, 0, -1}, im_p);
-
-    auto im = cam.render(scene);
-
-    boost::gil::png_write_view("hai.png", boost::gil::view(im));
+//    namespace shapes = rtr::shapes;
+//    namespace phys = rtr::physics;
+//
+//    rtr::material white { { 1.f, 1.f, 1.f } };
+//    rtr::material pink { { 1.f, .5f, .5f } };
+//
+//    shapes::sphere s { {0, 5, 0}, 5, &white };
+//    shapes::sphere s1 { { -2, -2, -2 }, 1, &white};
+//
+//    shapes::triangle t {{ glm::vec3{100, 0, -100}, {-100, 0, 100}, {100, 0, 100} }};
+//    shapes::triangle t1 {{ glm::vec3{-100, 0, 100}, {100, 0, -100}, {-100, 0, -100} }};
+//    shapes::mesh m ({ t, t1 }, &pink);
+//
+//    rtr::scene scene ({}, {64, 64, 64});
+//    scene.insert(s);
+//    scene.insert(s1);
+//    scene.insert(m);
+//
+//    scene.finalize();
+//
+//    rtr::im_plane im_p { -1, 1, 1, -1, 1, 800, 800 };
+//
+//    rtr::camera cam ({0, 5, 25}, {0, 1, 0}, {0, 0, -1}, im_p);
+//
+//    auto im = cam.render(scene);
+//    boost::gil::png_write_view("hai.png", boost::gil::view(im));
 }
