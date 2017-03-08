@@ -52,7 +52,7 @@ namespace shapes
         {
             auto oc = partition.insert(tri);
 
-            if (oc->get_size() > 4)
+            if (oc->get_size() > 4 && oc->get_children().size() == 0)
             {
                 oc->add_level();
             }

@@ -17,15 +17,17 @@ namespace shapes
 {
     class triangle
     {
+        struct tri_corners
+        {
+            glm::vec3 a;
+            glm::vec3 b;
+            glm::vec3 c;
+        };
+
         union
         {
             std::array<glm::vec3, 3> vertices;
-            struct
-            {
-                glm::vec3 a;
-                glm::vec3 b;
-                glm::vec3 c;
-            } verts;
+            tri_corners verts;
         };
 
     public:

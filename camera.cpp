@@ -8,10 +8,6 @@
 #include <scene.hpp>
 #include <iostream>
 
-static std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
-{
-    return os << '(' << v.x << ", " << v.y << ", " << v.z << ')';
-}
 boost::gil::rgb8_image_t rtr::camera::render(const scene& scene) const
 {
     using namespace physics;
