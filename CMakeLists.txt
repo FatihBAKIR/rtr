@@ -3,16 +3,31 @@ project(ray)
 
 set(CMAKE_CXX_STANDARD 14)
 
-set(RELEASE_FLAGS -pthread -O3 -march=native -fno-exceptions -fno-rtti)
+set(RELEASE_FLAGS "-pthread -O3 -march=native -fno-exceptions -fno-rtti")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+if (CMAKE_BUILD_TYPE MATCHES "Release")
+    message("Performance Build")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${RELEASE_FLAGS}")
+endif()
 
 set(SOURCE_FILES main.cpp physics/ray.cpp physics/ray.hpp camera.cpp camera.hpp transform.hpp scene.hpp shapes/sphere.cpp
         shapes/sphere.hpp material.hpp rtr_fwd.hpp shapes/triangle.cpp shapes/triangle.hpp vertex.hpp physics/octree.hpp
         physics/collision.hpp physics/collision.cpp physics/aabb.hpp shapes/mesh.cpp shapes/mesh.hpp scene.cpp
         rtr_config.hpp meta_list.hpp physics/aabb_tri_intersect.cpp)
 
-set(SOURCE_FILES ${SOURCE_FILES} 3rd_party/tinyxml2/tinyxml2.cpp xml_parse.cpp xml_parse.hpp)
+set(SOURCE_FILES ${SOURCE_FILES} 3rd_party/tinyxml2/tinyxml2.cpp xml_parse.cpp xml_parse.hpp utility.hpp utility.cpp)
+
+if(MSVC)
+    if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
+        string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    else()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+    endif()
+elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wno-long-long -pedantic")
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wno-long-long -pedantic -Wno-missing-braces")
+endif()
 
 add_executable(ray ${SOURCE_FILES})
 

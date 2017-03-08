@@ -6,11 +6,7 @@
 #include <queue>
 #include <shapes/mesh.hpp>
 #include <physics/ray.hpp>
-
-static std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
-{
-    return os << '(' << v.x << ", " << v.y << ", " << v.z << ')';
-}
+#include <utility.hpp>
 
 namespace rtr
 {
@@ -52,7 +48,7 @@ namespace shapes
         {
             auto oc = partition.insert(tri);
 
-            if (oc->get_size() > 4)
+            if (oc->get_size() > 4 && oc->get_children().size() == 0)
             {
                 oc->add_level();
             }

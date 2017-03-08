@@ -17,7 +17,6 @@
 #include <material.hpp>
 #include <3rd_party/tinyxml2/tinyxml2.h>
 #include <unordered_map>
-#include <bits/unordered_map.h>
 
 namespace xml = tinyxml2;
 
