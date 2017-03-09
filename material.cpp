@@ -10,6 +10,7 @@
 namespace rtr
 {
     glm::vec3 material::calculate_color(const scene* scene, const glm::vec3& pos, const glm::vec3 &normal) const {
-        return (normal + glm::vec3(1, 1, 1)) * 0.5f;
+        glm::vec3 ambient = scene->get_ambient().intensity_at(pos);
+        return ambient;
     }
 }

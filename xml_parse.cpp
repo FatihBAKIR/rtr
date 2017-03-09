@@ -2,10 +2,8 @@
 // Created by Mehmet Fatih BAKIR on 05/03/2017.
 //
 
-#include <shapes/sphere.hpp>
-#include <shapes/triangle.hpp>
-#include <shapes/mesh.hpp>
-#include <lights/ambient_light.hpp>
+#include <lights.hpp>
+#include <shapes.hpp>
 
 #include <xml_parse.hpp>
 #include <glm/vec3.hpp>
@@ -16,7 +14,7 @@
 #include <vector>
 
 #include <material.hpp>
-#include <3rd_party/tinyxml2/tinyxml2.h>
+#include <tinyxml2.h>
 #include <unordered_map>
 
 namespace xml = tinyxml2;
@@ -87,8 +85,6 @@ rtr::shapes::mesh read_mesh(const xml::XMLElement* elem, gsl::span<glm::vec3> ve
 
 void read_objects(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const std::unordered_map<long, rtr::material>& mats, rtr::scene& sc)
 {
-    using namespace rtr::shapes;
-
     glm::vec3 scene_min, scene_max;
 
     for (auto s = elem->FirstChildElement(); s; s = s->NextSiblingElement()) {
@@ -98,6 +94,19 @@ void read_objects(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const
         else if (s->Name()==std::string("Sphere")) {
             sc.insert(read_sphere(s, verts, mats));
         }
+    }
+}
+
+rtr::lights::ambient_light read_ambient(const xml::XMLElement* elem)
+{
+    
+}
+
+void read_lights(const xml::XMLElement* elem, rtr::scene& sc)
+{
+    for (auto l = elem->FirstChildElement(); l; l = l->NextSiblingElement())
+    {
+
     }
 }
 

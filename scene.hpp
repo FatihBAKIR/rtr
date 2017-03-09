@@ -10,6 +10,7 @@
 #include <physics/octree.hpp>
 #include <unordered_map>
 #include <material.hpp>
+#include <lights/ambient_light.hpp>
 
 namespace rtr
 {
@@ -19,7 +20,7 @@ class scene
     using shape_vectors = png::map_t<png::mapper<bvector>, shape_list>;
     using shape_vector_tuple = png::convert_t<boost::fusion::vector, shape_vectors>;
 
-    using light_list = png::list<lights::ambient_light>;
+    using light_list = png::list<>;
     using light_vectors = png::map_t<png::mapper<bvector>, light_list>;
     using light_vector_tuple = png::convert_t<boost::fusion::vector, light_vectors>;
 
@@ -28,6 +29,7 @@ class scene
     octree_type part;
     shape_vector_tuple shapes;
     light_vector_tuple lights;
+    lights::ambient_light ambient;
 
     std::unordered_map<long, material> mats;
 
@@ -60,6 +62,11 @@ public:
                 fun(&light);
             });
         });
+    }
+
+    const lights::ambient_light& get_ambient() const
+    {
+        return ambient;
     }
 
     void finalize();
