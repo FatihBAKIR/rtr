@@ -86,13 +86,21 @@ rtr::shapes::mesh read_mesh(const xml::XMLElement* elem, gsl::span<glm::vec3> ve
 void read_objects(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const std::unordered_map<long, rtr::material>& mats, rtr::scene& sc)
 {
     glm::vec3 scene_min, scene_max;
+    float max_radius = 0;
 
     for (auto s = elem->FirstChildElement(); s; s = s->NextSiblingElement()) {
         if (s->Name()==std::string("Mesh") || s->Name() == std::string("Triangle")) {
             sc.insert(read_mesh(s, verts, mats));
         }
         else if (s->Name()==std::string("Sphere")) {
-            sc.insert(read_sphere(s, verts, mats));
+            auto&& sphere = read_sphere(s, verts, mats);
+            if (sphere.get_radius() > max_radius)
+            {
+                auto growth = sphere.get_radius() - max_radius;
+                max_radius = sphere.get_radius();
+                sc.resize(sc.get_box().position, sc.get_box().extent + glm::vec3(growth, growth, growth) * 2.f);
+            }
+            sc.insert(sphere);
         }
         else
         {

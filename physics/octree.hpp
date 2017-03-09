@@ -75,6 +75,7 @@ namespace physics
             return insert_impl(shape);
         }
 
+        void resize(const glm::vec3& center, const glm::vec3& extent);
         void add_level();
         unsigned long get_size() { return size; }
     };
@@ -166,6 +167,12 @@ namespace physics
         auto& v = boost::fusion::at_c<index>(ptr_vectors);
         v.erase(std::remove(v.begin(), v.end(), p));
         --size;
+    }
+
+    template <class... Ts>
+    void octree<Ts...>::resize(const glm::vec3 &center, const glm::vec3 &extent) {
+        Expects(children.size() == 0);
+        box = {center, extent};
     }
 }
 }

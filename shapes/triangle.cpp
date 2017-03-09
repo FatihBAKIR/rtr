@@ -31,7 +31,7 @@ namespace rtr {
             auto gamma = determinant(a_c1, b, a_c3) / detA;
             auto param = determinant(a_c1, a_c2, b) / detA;
 
-            if (beta < 0 || gamma < 0 || (1 - beta - gamma) < 0 || param < 0)
+            if (beta < -0.0001 || gamma < -0.0001 || (1 - beta - gamma) < -0.0001 || param < -0.0001)
             {
                 return {};
             }

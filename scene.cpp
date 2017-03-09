@@ -97,4 +97,8 @@ void rtr::scene::insert(rtr::lights::ambient_light&& light)
     ambient = std::make_unique<lights::ambient_light>(std::move(light));
 }
 
+void rtr::scene::resize(const glm::vec3 &pos, const glm::vec3 &extent) {
+    part.resize(pos, extent);
+}
+
 rtr::scene::~scene() = default;

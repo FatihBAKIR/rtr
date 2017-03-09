@@ -42,6 +42,9 @@ public:
     boost::optional<physics::ray_hit> ray_cast(const physics::ray& ray) const;
 
     auto& materials() const { return mats; }
+    const physics::aabb& get_box() const {
+        return part.bounding_box();
+    }
 
     void insert(const lights::ambient_light& light);
     void insert(lights::ambient_light&& light);
@@ -82,6 +85,7 @@ public:
         return *ambient;
     }
 
+    void resize(const glm::vec3& pos, const glm::vec3& extent);
     void finalize();
 };
 }

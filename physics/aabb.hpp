@@ -12,10 +12,10 @@ namespace rtr
 namespace physics
 {
 struct aabb {
-    const glm::vec3 position;
-    const glm::vec3 extent;
-    const glm::vec3 min;
-    const glm::vec3 max;
+    glm::vec3 position;
+    glm::vec3 extent;
+    glm::vec3 min;
+    glm::vec3 max;
 
     aabb(const glm::vec3 &pos, const glm::vec3 &ext)
             : position(pos), extent(ext), min(pos - ext * 0.5f), max(pos + ext * 0.5f) {
