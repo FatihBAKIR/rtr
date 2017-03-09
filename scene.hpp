@@ -28,6 +28,8 @@ class scene
 public:
 
     scene(const glm::vec3& center, const glm::vec3& extent, std::unordered_map<long, material> mats);
+    scene(const scene&) = delete;
+    scene(scene&&) = default;
     ~scene();
 
     boost::optional<physics::ray_hit> ray_cast(const physics::ray& ray) const;

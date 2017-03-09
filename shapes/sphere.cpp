@@ -14,7 +14,7 @@ namespace rtr
 {
 namespace shapes
 {
-    boost::optional<float> sphere::get_parameter(const physics::ray& ray) const
+    boost::optional<sphere::param_res_t> sphere::get_parameter(const physics::ray& ray) const
     {
         auto line = ray.origin - get_center();
 
@@ -44,12 +44,13 @@ namespace shapes
             }
         }
 
-        return root;
+        return { {root, nullptr} };
     }
 
-    physics::ray_hit sphere::intersect(const physics::ray& ray, float parameter) const
+    physics::ray_hit sphere::intersect(const physics::ray& ray, float parameter, const void* data) const
     {
-        return physics::ray_hit{ ray, mat, {}, {}, parameter };
+        auto pos = ray.origin + ray.dir * parameter;
+        return physics::ray_hit{ ray, mat, pos, (pos - this->get_center()) / this->get_radius(), parameter };
     }
 }
 }

@@ -7,6 +7,7 @@
 #include <shapes/mesh.hpp>
 #include <physics/ray.hpp>
 #include <utility.hpp>
+#include <chrono>
 
 namespace rtr
 {
@@ -14,6 +15,7 @@ namespace shapes
 {
     physics::octree<triangle> partition(gsl::span<triangle> tris)
     {
+        auto begin = std::chrono::high_resolution_clock::now();
         glm::vec3 min = tris[0].get_vertices()[0];
         glm::vec3 max = tris[0].get_vertices()[0];
 
@@ -48,29 +50,34 @@ namespace shapes
         {
             auto oc = partition.insert(tri);
 
-            if (oc->get_size() > 4 && oc->get_children().size() == 0)
+            if (oc->get_size() > 1 && oc->get_children().size() == 0)
             {
                 oc->add_level();
             }
         }
 
+        auto end = std::chrono::high_resolution_clock::now();
+
+        std::cout << "Octree generation took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "ms\n";
+
         return partition;
     }
 
 
-    physics::ray_hit mesh::intersect(const physics::ray& ray, float parameter) const
+    physics::ray_hit mesh::intersect(const physics::ray& ray, float parameter, const void* data) const
     {
-        return physics::ray_hit{ ray, mat, {}, {}, parameter };
+        const triangle* tri = static_cast<const triangle*>(data);
+        return physics::ray_hit{ ray, mat, ray.origin + ray.dir * parameter, tri->get_normal() , parameter };
     }
 
-    mesh::~mesh() = default;
+    mesh::~mesh() noexcept = default;
 
     mesh::mesh(boost::container::vector<triangle> tris, const material* m)
             : tris(std::move(tris)), part(partition(this->tris)), mat(m)
     {
     }
 
-    boost::optional<float> mesh::get_parameter(const rtr::physics::ray& ray) const
+    boost::optional<mesh::param_result_t> mesh::get_parameter(const rtr::physics::ray& ray) const
     {
         float cur_param = std::numeric_limits<float>::infinity();
         const triangle* cur_hit = nullptr;
@@ -115,7 +122,15 @@ namespace shapes
             return {};
         }
 
-        return cur_param;
+        return { {cur_param, cur_hit} };
+    }
+
+    mesh::mesh(mesh && rhs) noexcept :
+        tris(std::move(rhs.tris)),
+        part(std::move(rhs.part)),
+        mat(rhs.mat)
+    {
+
     }
 }
 }

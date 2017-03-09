@@ -24,11 +24,19 @@ class mesh {
 
 public:
 
-    mesh(boost::container::vector<triangle> tris, const material* mat);
-    ~mesh();
+    struct param_result_t
+    {
+        float parameter;
+        const triangle* data;
+    };
 
-    boost::optional<float> get_parameter(const physics::ray& ray) const;
-    physics::ray_hit intersect(const physics::ray& ray, float parameter) const;
+    mesh(boost::container::vector<triangle> tris, const material* mat);
+    mesh(const mesh&) = delete;
+    mesh(mesh&&) noexcept;
+    ~mesh() noexcept;
+
+    boost::optional<param_result_t> get_parameter(const physics::ray& ray) const;
+    physics::ray_hit intersect(const physics::ray& ray, float parameter, const void*) const;
 
     const physics::aabb& bounding_box() const
     {

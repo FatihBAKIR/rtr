@@ -90,64 +90,62 @@ namespace {
     if(min>rad || max<-rad) return 0;
 }
 
-namespace rtr
-{
-namespace physics
-{
-    bool intersect(const rtr::physics::aabb& box, gsl::span<const glm::vec3> triverts) {
-    float min, max, p0, p1, p2, rad, fex, fey, fez;
+namespace rtr {
+    namespace physics {
+        bool intersect(const rtr::physics::aabb &box, gsl::span<const glm::vec3> triverts) {
+            float min, max, p0, p1, p2, rad, fex, fey, fez;
 
-    auto boxhalfsize = box.extent * 0.5f;
+            auto boxhalfsize = box.extent * 0.5f;
 
-    auto v0 = triverts[0] - box.position;
-    auto v1 = triverts[1] - box.position;
-    auto v2 = triverts[2] - box.position;
+            auto v0 = triverts[0] - box.position;
+            auto v1 = triverts[1] - box.position;
+            auto v2 = triverts[2] - box.position;
 
-    auto e0 = v1 - v0;
-    auto e1 = v2 - v1;
-    auto e2 = v0 - v2;
+            auto e0 = v1 - v0;
+            auto e1 = v2 - v1;
+            auto e2 = v0 - v2;
 
-    fex = std::abs(e0[X]);
-    fey = std::abs(e0[Y]);
-    fez = std::abs(e0[Z]);
+            fex = std::abs(e0[X]);
+            fey = std::abs(e0[Y]);
+            fez = std::abs(e0[Z]);
 
-    AXISTEST_X01(e0[Z], e0[Y], fez, fey);
-    AXISTEST_Y02(e0[Z], e0[X], fez, fex);
-    AXISTEST_Z12(e0[Y], e0[X], fey, fex);
+            AXISTEST_X01(e0[Z], e0[Y], fez, fey);
+            AXISTEST_Y02(e0[Z], e0[X], fez, fex);
+            AXISTEST_Z12(e0[Y], e0[X], fey, fex);
 
-    fex = std::abs(e1[X]);
-    fey = std::abs(e1[Y]);
-    fez = std::abs(e1[Z]);
+            fex = std::abs(e1[X]);
+            fey = std::abs(e1[Y]);
+            fez = std::abs(e1[Z]);
 
-    AXISTEST_X01(e1[Z], e1[Y], fez, fey);
-    AXISTEST_Y02(e1[Z], e1[X], fez, fex);
-    AXISTEST_Z0(e1[Y], e1[X], fey, fex);
+            AXISTEST_X01(e1[Z], e1[Y], fez, fey);
+            AXISTEST_Y02(e1[Z], e1[X], fez, fex);
+            AXISTEST_Z0(e1[Y], e1[X], fey, fex);
 
-    fex = std::abs(e2[X]);
-    fey = std::abs(e2[Y]);
-    fez = std::abs(e2[Z]);
+            fex = std::abs(e2[X]);
+            fey = std::abs(e2[Y]);
+            fez = std::abs(e2[Z]);
 
-    AXISTEST_X2(e2[Z], e2[Y], fez, fey);
-    AXISTEST_Y1(e2[Z], e2[X], fez, fex);
-    AXISTEST_Z12(e2[Y], e2[X], fey, fex);
+            AXISTEST_X2(e2[Z], e2[Y], fez, fey);
+            AXISTEST_Y1(e2[Z], e2[X], fez, fex);
+            AXISTEST_Z12(e2[Y], e2[X], fey, fex);
 
-    std::tie(min, max) = find_min_max(v0[X], v1[X], v2[X]);
+            std::tie(min, max) = find_min_max(v0[X], v1[X], v2[X]);
 
-    if (min > boxhalfsize[X] || max < -boxhalfsize[X]) return false;
+            if (min > boxhalfsize[X] || max < -boxhalfsize[X]) return false;
 
-    std::tie(min, max) = find_min_max(v0[X], v1[X], v2[X]);
+            std::tie(min, max) = find_min_max(v0[Y], v1[Y], v2[Y]);
 
-    if (min > boxhalfsize[Y] || max < -boxhalfsize[Y]) return false;
+            if (min > boxhalfsize[Y] || max < -boxhalfsize[Y]) return false;
 
-    std::tie(min, max) = find_min_max(v0[X], v1[X], v2[X]);
+            std::tie(min, max) = find_min_max(v0[Z], v1[Z], v2[Z]);
 
-    if (min > boxhalfsize[Z] || max < -boxhalfsize[Z]) return false;
+            if (min > boxhalfsize[Z] || max < -boxhalfsize[Z]) return false;
 
-    auto normal = glm::cross(e0, e1);
+            auto normal = glm::cross(e0, e1);
 
-    if (!planeBoxOverlap(normal, v0, boxhalfsize)) return false;    // -NJMP-
+            if (!planeBoxOverlap(normal, v0, boxhalfsize)) return false;    // -NJMP-
 
-    return true;
-}
-}
+            return true;
+        }
+    }
 }

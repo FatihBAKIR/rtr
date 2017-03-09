@@ -16,6 +16,7 @@ boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::
 
     boost::optional<shape_variant> cur_hit;
     float cur_param = std::numeric_limits<float>::infinity();
+    const void* shape_data = nullptr;
 
     std::queue<const octree_type*> q;
     q.push(&part);
@@ -42,10 +43,11 @@ boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::
             auto p = shape->get_parameter(ray);
             if (p)
             {
-                auto param = *p;
-                if (param < cur_param)
+                auto& param = *p;
+                if (param.parameter < cur_param)
                 {
-                    cur_param = param;
+                    cur_param = param.parameter;
+                    shape_data = param.data;
                     cur_hit = shape;
                 }
             }
@@ -60,7 +62,7 @@ boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::
     boost::optional<rtr::physics::ray_hit> res;
     boost::apply_visitor([&](auto shape)
     {
-        res = shape->intersect(ray, cur_param);
+        res = shape->intersect(ray, cur_param, shape_data);
     }, *cur_hit);
     return res;
 }
@@ -68,7 +70,6 @@ boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::
 rtr::scene::scene(const glm::vec3& c, const glm::vec3& e, const std::unordered_map<long, rtr::material> mats)
         : part(c, e), mats(std::move(mats))
 {
-
 }
 
 void rtr::scene::finalize()

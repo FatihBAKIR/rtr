@@ -81,7 +81,7 @@ rtr::shapes::mesh read_mesh(const xml::XMLElement* elem, gsl::span<glm::vec3> ve
     }
 
     auto mat_it = mats.find(mat_id);
-    return { faces, &(*mat_it).second };
+    return { std::move(faces), &(*mat_it).second };
 }
 
 void read_objects(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const std::unordered_map<long, rtr::material>& mats, rtr::scene& sc)
@@ -137,8 +137,14 @@ std::pair<rtr::scene, std::vector<rtr::camera>> read_scene(const std::string& pa
     auto root = doc.FirstChildElement("Scene");
     std::cout << root->FirstChildElement("BackgroundColor")->GetText() << '\n';
 
-    ray_epsilon = root->FirstChildElement("ShadowRayEpsilon")->FloatText(0);
-    intersect_epsilon = root->FirstChildElement("IntersectionTestEpsilon")->FloatText(0);
+    if (root->FirstChildElement("ShadowRayEpsilon"))
+    {
+        ray_epsilon = root->FirstChildElement("ShadowRayEpsilon")->FloatText(0);
+    }
+    if (root->FirstChildElement("IntersectionTestEpsilon"))
+    {
+        intersect_epsilon = root->FirstChildElement("IntersectionTestEpsilon")->FloatText(0);
+    }
 
     std::vector<rtr::camera> cams;
     auto cameras = root->FirstChildElement("Cameras");
@@ -183,5 +189,5 @@ std::pair<rtr::scene, std::vector<rtr::camera>> read_scene(const std::string& pa
 
     read_objects(objs_root, vert_pos, s.materials(), s);
 
-    return std::make_pair(s, cams);
+    return std::make_pair(std::move(s), std::move(cams));
 }

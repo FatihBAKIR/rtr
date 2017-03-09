@@ -3,19 +3,25 @@ project(ray)
 
 set(CMAKE_CXX_STANDARD 14)
 
-set(RELEASE_FLAGS "-pthread -Ofast -march=native -fno-exceptions -fno-rtti")
+set(DEBUG_FLAGS "-g -O0")
+set(RELEASE_FLAGS "-pthread -Ofast -march=native -fno-rtti -static-libstdc++ -static-libgcc")
 
 if (CMAKE_BUILD_TYPE MATCHES "Release")
     message("Performance Build")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${RELEASE_FLAGS}")
+elseif(CMAKE_BUILD_TYPE MATCHES "Debug")
+    message("Debug Build")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEBUG_FLAGS}")
 endif()
 
-set(SOURCE_FILES main.cpp physics/ray.cpp physics/ray.hpp camera.cpp camera.hpp transform.hpp scene.hpp shapes/sphere.cpp
+set (COMMON_FILES physics/ray.cpp physics/ray.hpp camera.cpp camera.hpp transform.hpp scene.hpp shapes/sphere.cpp
         shapes/sphere.hpp material.hpp rtr_fwd.hpp shapes/triangle.cpp shapes/triangle.hpp vertex.hpp physics/octree.hpp
         physics/collision.hpp physics/collision.cpp physics/aabb.hpp shapes/mesh.cpp shapes/mesh.hpp scene.cpp
-        rtr_config.hpp meta_list.hpp physics/aabb_tri_intersect.cpp)
+        rtr_config.hpp meta_list.hpp physics/aabb_tri_intersect.cpp 3rd_party/tinyxml2/tinyxml2.cpp xml_parse.cpp xml_parse.hpp utility.hpp utility.cpp)
 
-set(SOURCE_FILES ${SOURCE_FILES} 3rd_party/tinyxml2/tinyxml2.cpp xml_parse.cpp xml_parse.hpp utility.hpp utility.cpp)
+set(TEST_FILES ${COMMON_FILES} tests/physics/collisions.cpp tests/tests_main.cpp)
+
+set(SOURCE_FILES ${COMMON_FILES} main.cpp)
 
 if(MSVC)
     if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
@@ -30,6 +36,7 @@ elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
 endif()
 
 add_executable(ray ${SOURCE_FILES})
+add_executable(tests ${TEST_FILES})
 
 target_compile_definitions(ray PRIVATE)
 
@@ -47,3 +54,15 @@ target_include_directories(ray PUBLIC 3rd_party/tinyxml2)
 
 target_include_directories(ray PUBLIC ${PNG_INCLUDE_DIR})
 target_link_libraries(ray ${PNG_LIBRARY})
+
+target_include_directories(tests PUBLIC ${CMAKE_SOURCE_DIR})
+
+target_link_libraries(tests ${Boost_LIBRARIES})
+target_include_directories(tests PUBLIC ${Boost_INCLUDE_DIRS})
+
+target_include_directories(tests PUBLIC 3rd_party/gsl/include)
+target_include_directories(tests PUBLIC 3rd_party/glm)
+target_include_directories(tests PUBLIC 3rd_party/tinyxml2)
+
+target_include_directories(tests PUBLIC ${PNG_INCLUDE_DIR})
+target_link_libraries(tests ${PNG_LIBRARY})

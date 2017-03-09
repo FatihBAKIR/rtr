@@ -28,7 +28,7 @@ boost::gil::rgb8_image_t rtr::camera::render(const scene& scene) const
             auto res = scene.ray_cast(r);
             if (res)
             {
-                const auto& c = res->mat->diffuse;
+                const auto& c =res->normal;
                 v(col, row) = rgb8_pixel_t(c[0] * 255, c[1] * 255, c[2] * 255);
             }
 

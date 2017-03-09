@@ -10,6 +10,7 @@
 #include <glm/vec3.hpp>
 #include <gsl/span>
 #include <physics/collision.hpp>
+#include <glm/glm.hpp>
 
 namespace rtr
 {
@@ -30,9 +31,14 @@ namespace shapes
             tri_corners verts;
         };
 
+        glm::vec3 m_normal;
+
     public:
 
-        triangle(const std::array<glm::vec3, 3>& verts) : vertices(verts) {}
+        triangle(const std::array<glm::vec3, 3>& vs) : vertices(vs)
+        {
+            m_normal = glm::normalize(glm::cross(verts.c - verts.a, verts.b - verts.a));
+        }
 
         boost::optional<float> get_parameter(const physics::ray& ray) const;
         physics::ray_hit intersect(const physics::ray& ray, float parameter) const;
@@ -40,6 +46,11 @@ namespace shapes
         gsl::span<const glm::vec3> get_vertices() const
         {
             return vertices;
+        }
+
+        glm::vec3 get_normal() const
+        {
+            return m_normal;
         }
     };
 
