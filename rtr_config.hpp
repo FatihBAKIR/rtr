@@ -4,7 +4,15 @@
 
 #pragma once
 
-#include <rtr_fwd.hpp>
-#include <meta_list.hpp>
+namespace rtr
+{
+namespace config
+{
+    #if defined(RTR_OPENEXR_SUPPORT) && RTR_OPENEXR_SUPPORT
+        constexpr bool OpenEXR_Support = true;
+    #else
+        constexpr bool OpenEXR_Support = false;
+    #endif
+}
+}
 
-using shapes = png::list<png2::ctype<rtr::shapes::sphere>, png2::ctype<rtr::shapes::mesh>>;

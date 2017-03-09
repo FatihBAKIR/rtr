@@ -17,7 +17,7 @@ namespace rtr
 
         float phong;
 
-        glm::vec3 calculate_color(const scene* scene, const glm::vec3& pos, const glm::vec3& normal) const;
+        glm::vec3 calculate_color(const scene& scene, const glm::vec3& view_dir, const glm::vec3& pos, const glm::vec3& normal) const;
 
         long id;
     };

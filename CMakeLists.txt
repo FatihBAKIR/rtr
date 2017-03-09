@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.6)
 project(ray)
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -19,15 +20,16 @@ if (CMAKE_C_COMPILER_ID MATCHES "GNU")
 endif()
 
 set (COMMON_FILES physics/ray.cpp physics/ray.hpp camera.cpp camera.hpp transform.hpp scene.hpp shapes/sphere.cpp
-        shapes/sphere.hpp material.hpp rtr_fwd.hpp shapes/triangle.cpp shapes/triangle.hpp vertex.hpp physics/octree.hpp
+        shapes/sphere.hpp materials/material.hpp rtr_fwd.hpp shapes/triangle.cpp shapes/triangle.hpp vertex.hpp physics/octree.hpp
         physics/collision.hpp physics/collision.cpp physics/aabb.hpp shapes/mesh.cpp shapes/mesh.hpp scene.cpp
         rtr_config.hpp meta_list.hpp physics/aabb_tri_intersect.cpp 3rd_party/tinyxml2/tinyxml2.cpp xml_parse.cpp
-        xml_parse.hpp utility.hpp utility.cpp material.cpp lights/ambient_light.hpp lights.hpp shapes.hpp lights/point_light.hpp)
+        xml_parse.hpp utility.hpp utility.cpp materials/material.cpp lights/ambient_light.hpp lights.hpp shapes.hpp lights/point_light.hpp)
 
+set (GIL_HDR_FILES gil_extension/exr/detail/color_space_traits.cpp)
 
-set(TEST_FILES ${COMMON_FILES} tests/physics/collisions.cpp tests/tests_main.cpp)
+set(TEST_FILES ${GIL_HDR_FILES} ${COMMON_FILES} tests/physics/collisions.cpp tests/tests_main.cpp)
 
-set(SOURCE_FILES ${COMMON_FILES} main.cpp)
+set(SOURCE_FILES ${GIL_HDR_FILES} ${COMMON_FILES} main.cpp)
 
 if(MSVC)
     if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
@@ -48,6 +50,7 @@ target_compile_definitions(ray PRIVATE)
 
 find_package(Boost REQUIRED COMPONENTS system thread filesystem)
 find_package(PNG REQUIRED)
+find_package(OpenEXR)
 
 target_include_directories(ray PUBLIC ${CMAKE_SOURCE_DIR})
 
@@ -60,6 +63,14 @@ target_include_directories(ray PUBLIC 3rd_party/tinyxml2)
 
 target_include_directories(ray PUBLIC ${PNG_INCLUDE_DIR})
 target_link_libraries(ray ${PNG_LIBRARY})
+
+if (OpenEXR_FOUND)
+    message("Found OpenEXR, Building EXR Output Support")
+
+    target_compile_definitions(ray PRIVATE RTR_OPENEXR_SUPPORT=1)
+    target_include_directories(ray PUBLIC ${OPENEXR_INCLUDE_DIRS})
+    target_link_libraries(ray ${OPENEXR_LIBRARIES})
+endif()
 
 target_include_directories(tests PUBLIC ${CMAKE_SOURCE_DIR})
 

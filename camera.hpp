@@ -7,6 +7,7 @@
 #include <transform.hpp>
 #include <glm/glm.hpp>
 #include <boost/gil/gil_all.hpp>
+#include <gil_extension/exr/half/typedefs.hpp>
 
 namespace rtr
 {
@@ -47,7 +48,7 @@ public:
     camera(const glm::vec3& pos, const glm::vec3& up, const glm::vec3& gaze, const im_plane& p) :
             t{pos, up, -gaze, glm::cross(up, -gaze)}, plane{p} {}
 
-    boost::gil::rgb8_image_t render(const scene& scene) const;
+    boost::gil::rgb16f_image_t render(const scene& scene) const;
 
     const transform& get_transform() const
     {

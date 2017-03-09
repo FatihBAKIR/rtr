@@ -5,8 +5,13 @@
 #include <physics/ray.hpp>
 #include <camera.hpp>
 #include <scene.hpp>
+#include <rtr_config.hpp>
 
-boost::gil::rgb8_image_t rtr::camera::render(const scene& scene) const
+#include <ImfRgba.h>
+#include <gil_extension/exr/exr_io.hpp>
+
+
+boost::gil::rgb16f_image_t rtr::camera::render(const scene& scene) const
 {
     using namespace physics;
     using namespace boost::gil;
@@ -15,8 +20,8 @@ boost::gil::rgb8_image_t rtr::camera::render(const scene& scene) const
     const auto one_right = plane.pix_w * t.right;
     glm::vec3 pix_pos = plane.get_top_left(t) + 0.5f * plane.pix_w * t.right - 0.5f * plane.pix_h * t.up;
 
-    rgb8_image_t img(plane.width, plane.height);
-    rgb8_view_t v = view(img);
+    rgb16f_image_t img(plane.width, plane.height);
+    rgb16f_view_t v = view(img);
 
     for (int row = 0; row<plane.height; ++row) {
         auto row_pos = pix_pos;
@@ -26,8 +31,8 @@ boost::gil::rgb8_image_t rtr::camera::render(const scene& scene) const
             auto res = scene.ray_cast(r);
             if (res)
             {
-                const auto& c = res->mat->calculate_color(&scene, res->position, res->normal);
-                v(col, row) = rgb8_pixel_t(c[0], c[1], c[2]);
+                const auto& c = res->mat->calculate_color(scene, -r.dir, res->position, res->normal);
+                v(col, row) = rgb16f_pixel_t(half(c[0]), half(c[1]), half(c[2]));
             }
 
             row_pos += one_right;

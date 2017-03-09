@@ -9,7 +9,7 @@
 #include <boost/optional.hpp>
 #include <physics/octree.hpp>
 #include <unordered_map>
-#include <material.hpp>
+#include <materials/material.hpp>
 
 namespace rtr
 {
@@ -53,7 +53,7 @@ public:
         constexpr auto index = png::index_of_t<std::decay_t<LightT>, light_list>();
         auto& v = boost::fusion::at_c<index>(lights);
         v.push_back(std::forward<LightT>(light));
-    };
+    }
 
     template <class T>
     std::enable_if_t<png::index_of_t<std::decay_t<T>, shape_list>() >= 0>
@@ -78,6 +78,7 @@ public:
 
     const lights::ambient_light& get_ambient() const
     {
+        Expects(ambient != nullptr);
         return *ambient;
     }
 

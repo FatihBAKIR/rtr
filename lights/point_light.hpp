@@ -19,9 +19,14 @@ namespace rtr {
                     position(pos), intensity(intensity)
             { }
 
+            glm::vec3 get_position() const
+            {
+                return position;
+            }
+
             glm::vec3 intensity_at(const glm::vec3& at) const
             {
-                return intensity / glm::length2(at - position);
+                return intensity / (glm::length2(at - position));
             }
         };
     }

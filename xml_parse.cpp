@@ -13,7 +13,7 @@
 #include <iostream>
 #include <vector>
 
-#include <material.hpp>
+#include <materials/material.hpp>
 #include <tinyxml2.h>
 #include <unordered_map>
 
