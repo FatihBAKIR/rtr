@@ -16,12 +16,18 @@ namespace rtr
 class scene
 {
     using shape_list = png::list<shapes::sphere, shapes::mesh>;
+    using shape_vectors = png::map_t<png::mapper<bvector>, shape_list>;
+    using shape_vector_tuple = png::convert_t<boost::fusion::vector, shape_vectors>;
+
+    using light_list = png::list<lights::ambient_light>;
+    using light_vectors = png::map_t<png::mapper<bvector>, light_list>;
+    using light_vector_tuple = png::convert_t<boost::fusion::vector, light_vectors>;
+
     using octree_type = png::convert_t<physics::octree, shape_list>;
-    using vectors = png::map_t<png::mapper<bvector>, shape_list>;
-    using vector_tuple = png::convert_t<boost::fusion::vector, vectors>;
 
     octree_type part;
-    vector_tuple shapes;
+    shape_vector_tuple shapes;
+    light_vector_tuple lights;
 
     std::unordered_map<long, material> mats;
 
@@ -42,6 +48,18 @@ public:
         constexpr auto index = png::index_of_t<std::decay_t<T>, shape_list>();
         auto& v = boost::fusion::at_c<index>(shapes);
         v.push_back(std::forward<T>(obj));
+    }
+
+    template <class FunT>
+    void for_lights(const FunT& fun) const
+    {
+        boost::fusion::for_each(lights, [&](const auto& vector)
+        {
+            std::for_each(vector.begin(), vector.end(), [&](auto& light)
+            {
+                fun(&light);
+            });
+        });
     }
 
     void finalize();

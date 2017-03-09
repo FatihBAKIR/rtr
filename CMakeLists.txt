@@ -21,7 +21,7 @@ set (COMMON_FILES physics/ray.cpp physics/ray.hpp camera.cpp camera.hpp transfor
 
 set(TEST_FILES ${COMMON_FILES} tests/physics/collisions.cpp tests/tests_main.cpp)
 
-set(SOURCE_FILES ${COMMON_FILES} main.cpp)
+set(SOURCE_FILES ${COMMON_FILES} main.cpp material.cpp lights/ambient_light.hpp lights.hpp shapes.hpp)
 
 if(MSVC)
     if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")

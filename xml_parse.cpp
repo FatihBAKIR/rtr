@@ -2,6 +2,11 @@
 // Created by Mehmet Fatih BAKIR on 05/03/2017.
 //
 
+#include <shapes/sphere.hpp>
+#include <shapes/triangle.hpp>
+#include <shapes/mesh.hpp>
+#include <lights/ambient_light.hpp>
+
 #include <xml_parse.hpp>
 #include <glm/vec3.hpp>
 #include <sstream>
@@ -9,10 +14,6 @@
 #include <scene.hpp>
 #include <iostream>
 #include <vector>
-
-#include <shapes/sphere.hpp>
-#include <shapes/triangle.hpp>
-#include <shapes/mesh.hpp>
 
 #include <material.hpp>
 #include <3rd_party/tinyxml2/tinyxml2.h>

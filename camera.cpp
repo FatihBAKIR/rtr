@@ -3,10 +3,8 @@
 //
 
 #include <physics/ray.hpp>
-#include "camera.hpp"
-#include "material.hpp"
+#include <camera.hpp>
 #include <scene.hpp>
-#include <iostream>
 
 boost::gil::rgb8_image_t rtr::camera::render(const scene& scene) const
 {
@@ -28,7 +26,7 @@ boost::gil::rgb8_image_t rtr::camera::render(const scene& scene) const
             auto res = scene.ray_cast(r);
             if (res)
             {
-                const auto& c =res->normal;
+                const auto& c = res->mat->calculate_color(&scene, res->position, res->normal);
                 v(col, row) = rgb8_pixel_t(c[0] * 255, c[1] * 255, c[2] * 255);
             }
 

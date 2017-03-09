@@ -33,4 +33,9 @@ namespace rtr {
         template<class...>
         class octree;
     }
+
+    namespace lights
+    {
+        class ambient_light;
+    }
 }

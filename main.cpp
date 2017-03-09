@@ -1,8 +1,7 @@
 #include <iostream>
 
-#include <shapes/sphere.hpp>
-#include <shapes/triangle.hpp>
-#include <shapes/mesh.hpp>
+#include <lights.hpp>
+#include <shapes.hpp>
 
 #include <physics/ray.hpp>
 

@@ -37,11 +37,10 @@ namespace shapes
 
         triangle(const std::array<glm::vec3, 3>& vs) : vertices(vs)
         {
-            m_normal = glm::normalize(glm::cross(verts.c - verts.a, verts.b - verts.a));
+            m_normal = glm::normalize(glm::cross(verts.b - verts.a, verts.c - verts.a));
         }
 
         boost::optional<float> get_parameter(const physics::ray& ray) const;
-        physics::ray_hit intersect(const physics::ray& ray, float parameter) const;
 
         gsl::span<const glm::vec3> get_vertices() const
         {

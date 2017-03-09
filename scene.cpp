@@ -6,6 +6,7 @@
 #include <physics/ray.hpp>
 #include <shapes/mesh.hpp>
 #include <shapes/sphere.hpp>
+#include <lights/ambient_light.hpp>
 #include <vertex.hpp>
 #include <queue>
 
@@ -77,7 +78,6 @@ rtr::scene::scene(const glm::vec3& c, const glm::vec3& e, const std::unordered_m
 
 void rtr::scene::finalize()
 {
-
     boost::fusion::for_each(shapes, [&](auto& vector)
     {
         std::for_each(vector.begin(), vector.end(), [&](auto& elem)
