@@ -3,7 +3,7 @@ project(ray)
 
 set(CMAKE_CXX_STANDARD 14)
 
-set(RELEASE_FLAGS "-pthread -O3 -march=native -fno-exceptions -fno-rtti")
+set(RELEASE_FLAGS "-pthread -Ofast -march=native -fno-exceptions -fno-rtti")
 
 if (CMAKE_BUILD_TYPE MATCHES "Release")
     message("Performance Build")
