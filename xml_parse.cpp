@@ -94,19 +94,50 @@ void read_objects(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const
         else if (s->Name()==std::string("Sphere")) {
             sc.insert(read_sphere(s, verts, mats));
         }
+        else
+        {
+            abort();
+        }
     }
 }
 
 rtr::lights::ambient_light read_ambient(const xml::XMLElement* elem)
 {
-    
+    std::istringstream iss(elem->GetText());
+    glm::vec3 color;
+    iss >> color[0] >> color[1] >> color[2];
+    return { color };
+}
+
+rtr::lights::point_light read_point(const xml::XMLElement* elem)
+{
+    glm::vec3 pos, inte;
+
+    std::istringstream iss(elem->FirstChildElement("Position")->GetText());
+    iss >> pos[0] >> pos[1] >> pos[2];
+
+    iss = std::istringstream(elem->FirstChildElement("Intensity")->GetText());
+    iss >> inte[0] >> inte[1] >> inte[2];
+
+    return { pos, inte };
 }
 
 void read_lights(const xml::XMLElement* elem, rtr::scene& sc)
 {
     for (auto l = elem->FirstChildElement(); l; l = l->NextSiblingElement())
     {
-
+        if (l->Name() == std::string("AmbientLight"))
+        {
+            sc.insert(read_ambient(l));
+        }
+        else if (l->Name() == std::string("PointLight"))
+        {
+            sc.insert(read_point(l));
+        }
+        else
+        {
+            abort();
+        }
     }
 }
 
@@ -196,8 +227,10 @@ std::pair<rtr::scene, std::vector<rtr::camera>> read_scene(const std::string& pa
     rtr::scene s {center, ext, std::move(mats)};
 
     auto objs_root = root->FirstChildElement("Objects");
+    auto lights = root->FirstChildElement("Lights");
 
     read_objects(objs_root, vert_pos, s.materials(), s);
+    read_lights(lights, s);
 
     return std::make_pair(std::move(s), std::move(cams));
 }

@@ -2,11 +2,11 @@
 // Created by fatih on 02.03.2017.
 //
 
+#include <lights.hpp>
+#include <shapes.hpp>
+
 #include <scene.hpp>
 #include <physics/ray.hpp>
-#include <shapes/mesh.hpp>
-#include <shapes/sphere.hpp>
-#include <lights/ambient_light.hpp>
 #include <vertex.hpp>
 #include <queue>
 
@@ -85,6 +85,16 @@ void rtr::scene::finalize()
             part.insert(elem);
         });
     });
+}
+
+void rtr::scene::insert(const rtr::lights::ambient_light& light)
+{
+    ambient = std::make_unique<lights::ambient_light>(light);
+}
+
+void rtr::scene::insert(rtr::lights::ambient_light&& light)
+{
+    ambient = std::make_unique<lights::ambient_light>(std::move(light));
 }
 
 rtr::scene::~scene() = default;

@@ -27,7 +27,7 @@ boost::gil::rgb8_image_t rtr::camera::render(const scene& scene) const
             if (res)
             {
                 const auto& c = res->mat->calculate_color(&scene, res->position, res->normal);
-                v(col, row) = rgb8_pixel_t(c[0] * 255, c[1] * 255, c[2] * 255);
+                v(col, row) = rgb8_pixel_t(c[0], c[1], c[2]);
             }
 
             row_pos += one_right;

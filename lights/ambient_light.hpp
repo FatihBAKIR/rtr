@@ -15,7 +15,7 @@ namespace rtr
         public:
             ambient_light(const glm::vec3& intensity) : intensity(intensity){}
 
-            glm::vec3 intensity_at(const glm::vec3& at) const
+            glm::vec3 intensity_at(const glm::vec3&) const
             {
                 return intensity;
             }

@@ -10,7 +10,6 @@
 #include <physics/octree.hpp>
 #include <unordered_map>
 #include <material.hpp>
-#include <lights/ambient_light.hpp>
 
 namespace rtr
 {
@@ -20,7 +19,7 @@ class scene
     using shape_vectors = png::map_t<png::mapper<bvector>, shape_list>;
     using shape_vector_tuple = png::convert_t<boost::fusion::vector, shape_vectors>;
 
-    using light_list = png::list<>;
+    using light_list = png::list<lights::point_light>;
     using light_vectors = png::map_t<png::mapper<bvector>, light_list>;
     using light_vector_tuple = png::convert_t<boost::fusion::vector, light_vectors>;
 
@@ -29,7 +28,7 @@ class scene
     octree_type part;
     shape_vector_tuple shapes;
     light_vector_tuple lights;
-    lights::ambient_light ambient;
+    std::unique_ptr<lights::ambient_light> ambient;
 
     std::unordered_map<long, material> mats;
 
@@ -44,8 +43,21 @@ public:
 
     auto& materials() const { return mats; }
 
+    void insert(const lights::ambient_light& light);
+    void insert(lights::ambient_light&& light);
+
+    template <class LightT>
+    std::enable_if_t<png::index_of_t<std::decay_t<LightT>, light_list>() >= 0>
+    insert(LightT&& light)
+    {
+        constexpr auto index = png::index_of_t<std::decay_t<LightT>, light_list>();
+        auto& v = boost::fusion::at_c<index>(lights);
+        v.push_back(std::forward<LightT>(light));
+    };
+
     template <class T>
-    void insert(T&& obj)
+    std::enable_if_t<png::index_of_t<std::decay_t<T>, shape_list>() >= 0>
+    insert(T&& obj)
     {
         constexpr auto index = png::index_of_t<std::decay_t<T>, shape_list>();
         auto& v = boost::fusion::at_c<index>(shapes);
@@ -66,7 +78,7 @@ public:
 
     const lights::ambient_light& get_ambient() const
     {
-        return ambient;
+        return *ambient;
     }
 
     void finalize();

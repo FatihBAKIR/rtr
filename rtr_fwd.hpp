@@ -37,5 +37,6 @@ namespace rtr {
     namespace lights
     {
         class ambient_light;
+        class point_light;
     }
 }

@@ -4,7 +4,7 @@ project(ray)
 set(CMAKE_CXX_STANDARD 14)
 
 set(DEBUG_FLAGS "-g -O0")
-set(RELEASE_FLAGS "-pthread -Ofast -march=native -fno-rtti -static-libstdc++ -static-libgcc")
+set(RELEASE_FLAGS "-pthread -Ofast -march=native -fno-rtti")
 
 if (CMAKE_BUILD_TYPE MATCHES "Release")
     message("Performance Build")
@@ -14,14 +14,20 @@ elseif(CMAKE_BUILD_TYPE MATCHES "Debug")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEBUG_FLAGS}")
 endif()
 
+if (CMAKE_C_COMPILER_ID MATCHES "GNU")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -static-libgcc")
+endif()
+
 set (COMMON_FILES physics/ray.cpp physics/ray.hpp camera.cpp camera.hpp transform.hpp scene.hpp shapes/sphere.cpp
         shapes/sphere.hpp material.hpp rtr_fwd.hpp shapes/triangle.cpp shapes/triangle.hpp vertex.hpp physics/octree.hpp
         physics/collision.hpp physics/collision.cpp physics/aabb.hpp shapes/mesh.cpp shapes/mesh.hpp scene.cpp
-        rtr_config.hpp meta_list.hpp physics/aabb_tri_intersect.cpp 3rd_party/tinyxml2/tinyxml2.cpp xml_parse.cpp xml_parse.hpp utility.hpp utility.cpp)
+        rtr_config.hpp meta_list.hpp physics/aabb_tri_intersect.cpp 3rd_party/tinyxml2/tinyxml2.cpp xml_parse.cpp
+        xml_parse.hpp utility.hpp utility.cpp material.cpp lights/ambient_light.hpp lights.hpp shapes.hpp lights/point_light.hpp)
+
 
 set(TEST_FILES ${COMMON_FILES} tests/physics/collisions.cpp tests/tests_main.cpp)
 
-set(SOURCE_FILES ${COMMON_FILES} main.cpp material.cpp lights/ambient_light.hpp lights.hpp shapes.hpp)
+set(SOURCE_FILES ${COMMON_FILES} main.cpp)
 
 if(MSVC)
     if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")

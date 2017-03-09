@@ -5,3 +5,4 @@
 #pragma once
 
 #include <lights/ambient_light.hpp>
+#include <lights/point_light.hpp>

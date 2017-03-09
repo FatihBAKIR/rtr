@@ -47,7 +47,7 @@ namespace shapes
         return { {root, nullptr} };
     }
 
-    physics::ray_hit sphere::intersect(const physics::ray& ray, float parameter, const void* data) const
+    physics::ray_hit sphere::intersect(const physics::ray& ray, float parameter, const void*) const
     {
         auto pos = ray.origin + ray.dir * parameter;
         return physics::ray_hit{ ray, mat, pos, (pos - this->get_center()) / this->get_radius(), parameter };
