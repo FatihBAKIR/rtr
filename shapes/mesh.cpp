@@ -64,9 +64,8 @@ namespace shapes
     }
 
 
-    physics::ray_hit mesh::intersect(const physics::ray& ray, float parameter, const void* data) const
+    physics::ray_hit mesh::intersect(const physics::ray& ray, float parameter, const triangle* tri) const
     {
-        const triangle* tri = static_cast<const triangle*>(data);
         return physics::ray_hit{ ray, mat, ray.origin + ray.dir * parameter, tri->get_normal() , parameter };
     }
 
@@ -77,7 +76,7 @@ namespace shapes
     {
     }
 
-    boost::optional<mesh::param_result_t> mesh::get_parameter(const rtr::physics::ray& ray) const
+    boost::optional<mesh::param_res_t> mesh::get_parameter(const rtr::physics::ray& ray) const
     {
         float cur_param = std::numeric_limits<float>::infinity();
         const triangle* cur_hit = nullptr;

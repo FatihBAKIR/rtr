@@ -62,7 +62,10 @@ boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::
     boost::optional<rtr::physics::ray_hit> res;
     boost::apply_visitor([&](auto shape)
     {
-        res = shape->intersect(ray, cur_param, shape_data);
+        using shape_t = std::remove_const_t <std::remove_pointer_t <decltype(shape)>>;
+        using param_t = typename shape_t::param_res_t;
+        using data_t = decltype(std::declval<param_t>().data);
+        res = shape->intersect(ray, cur_param, static_cast<data_t>(shape_data));
     }, *cur_hit);
     return res;
 }

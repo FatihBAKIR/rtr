@@ -25,7 +25,7 @@ public:
     struct param_res_t
     {
         float parameter;
-        void* data;
+        const void* data;
     };
 
     sphere(const glm::vec3& p, float r, const material* m) : pos(p), radius(r), r2(r * r), mat(m)

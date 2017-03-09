@@ -24,7 +24,7 @@ class mesh {
 
 public:
 
-    struct param_result_t
+    struct param_res_t
     {
         float parameter;
         const triangle* data;
@@ -35,8 +35,8 @@ public:
     mesh(mesh&&) noexcept;
     ~mesh() noexcept;
 
-    boost::optional<param_result_t> get_parameter(const physics::ray& ray) const;
-    physics::ray_hit intersect(const physics::ray& ray, float parameter, const void*) const;
+    boost::optional<param_res_t> get_parameter(const physics::ray& ray) const;
+    physics::ray_hit intersect(const physics::ray& ray, float parameter, const triangle*) const;
 
     const physics::aabb& bounding_box() const
     {
