@@ -10,6 +10,48 @@
 #include <vertex.hpp>
 #include <queue>
 
+bool rtr::scene::ray_cast_param(const physics::ray& ray, float min_param, float max_param) const
+{
+    bool res = false;
+    std::queue<const octree_type*> q;
+    q.push(&part);
+
+    using physics::intersect;
+
+    while (!q.empty())
+    {
+        const octree_type* oc = q.front();
+        q.pop();
+
+        if (!intersect(oc->bounding_box(), ray))
+        {
+            continue;
+        }
+
+        for (auto& c : oc->get_children())
+        {
+            q.push(&c);
+        }
+
+        oc->for_shapes([&](auto shape)
+        {
+            auto p = shape->get_parameter(ray);
+            if (p)
+            {
+                auto& param = *p;
+                if (param.parameter < max_param && param.parameter > min_param)
+                {
+                    res = true;
+                    decltype(q) empty;
+                    q.swap(empty);
+                }
+            }
+        });
+    }
+
+    return res;
+}
+
 boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::ray &ray) const {
     using const_shapes = png::map_t<png::mapper<std::add_const_t>, shape_list>;
     using shape_pointers = png::map_t<png::mapper<std::add_pointer_t>, const_shapes>;

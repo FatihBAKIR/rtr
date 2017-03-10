@@ -44,7 +44,7 @@ class camera
     im_plane plane;
 
 public:
-    using render_type = render_config::hdr_render;
+    using render_type = render_config::ldr_render;
 
     camera(const glm::vec3& pos, const glm::vec3& up, const glm::vec3& gaze, const im_plane& p) :
             t{pos, up, -gaze, glm::cross(up, -gaze)}, plane{p} {}

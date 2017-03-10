@@ -40,6 +40,7 @@ public:
     ~scene();
 
     boost::optional<physics::ray_hit> ray_cast(const physics::ray& ray) const;
+    bool ray_cast_param(const physics::ray& ray, float min_param, float max_param) const;
 
     auto& materials() const { return mats; }
     const physics::aabb& get_box() const {

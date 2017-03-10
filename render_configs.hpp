@@ -4,28 +4,32 @@
 
 #pragma once
 
-#include <gil_extension/exr/half/typedefs.hpp>
+#if RTR_OPENEXR_SUPPORT
+    #include <gil_extension/exr/half/typedefs.hpp>
+#endif
 
 namespace rtr
 {
 namespace render_config
 {
-struct hdr_render;
-struct ldr_render;
 
 template <class>
 struct render_traits;
 
-template <>
-struct render_traits<hdr_render>
-{
-    using image_type = boost::gil::rgb16f_image_t;
-};
+#if RTR_OPENEXR_SUPPORT
+    struct hdr_render;
+    template <>
+    struct render_traits<hdr_render>
+    {
+        using image_type = boost::gil::rgb16f_image_t;
+    };
+#endif
 
-template <>
-struct render_traits<ldr_render>
-{
-    using image_type = boost::gil::rgb8_image_t;
-};
+    struct ldr_render;
+    template <>
+    struct render_traits<ldr_render>
+    {
+        using image_type = boost::gil::rgb8_image_t;
+    };
 }
 }

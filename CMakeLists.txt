@@ -72,7 +72,7 @@ add_executable(tests ${TEST_FILES})
 target_compile_definitions(ray PRIVATE)
 
 find_package(Boost REQUIRED COMPONENTS system thread filesystem)
-find_package(PNG REQUIRED)
+find_package(PNG)
 find_package(OpenEXR)
 
 target_include_directories(ray PUBLIC ${CMAKE_SOURCE_DIR})
@@ -84,8 +84,15 @@ target_include_directories(ray PUBLIC 3rd_party/gsl/include)
 target_include_directories(ray PUBLIC 3rd_party/glm)
 target_include_directories(ray PUBLIC 3rd_party/tinyxml2)
 
-target_include_directories(ray PUBLIC ${PNG_INCLUDE_DIR})
-target_link_libraries(ray ${PNG_LIBRARY})
+
+if (PNG_FOUND)
+    message("Found PNG, Building PNG Output Support")
+
+    target_compile_definitions(ray PRIVATE RTR_PNG_SUPPORT=1)
+
+    target_include_directories(ray PUBLIC ${PNG_INCLUDE_DIR})
+    target_link_libraries(ray ${PNG_LIBRARY})
+endif()
 
 if (OpenEXR_FOUND)
     message("Found OpenEXR, Building EXR Output Support")

@@ -19,18 +19,18 @@ namespace rtr
         auto light_handler = make_lambda_visitor<void>(
             [&](const lights::point_light* pl)
             {
-                auto light_intensity = pl->intensity_at(pos);
                 auto point_to_light = pl->get_position() - pos;
-                auto normalized_ptol = glm::normalize(point_to_light);
+                auto len = glm::length(point_to_light);
+                auto normalized_ptol = point_to_light / len;
 
-                auto shadow_ray = physics::ray(pos + normalized_ptol * 0.001f, normalized_ptol);
-                auto res = scene.ray_cast(shadow_ray);
-
+                auto shadow_ray = physics::ray(pos + 0.001f * normalized_ptol, normalized_ptol);
+                auto res = scene.ray_cast_param(shadow_ray, -0.001, len);
                 if (res) return;
 
-                auto diffuse_coeff = std::max(0.0f, glm::dot(normal, point_to_light));
+                auto light_intensity = pl->intensity_at(pos);
+                auto diffuse_coeff = std::max(0.0f, glm::dot(normal, normalized_ptol));
 
-                auto half_light_view = glm::normalize(view_dir + point_to_light);
+                auto half_light_view = glm::normalize(view_dir + normalized_ptol);
                 auto specular_coeff = std::pow(std::max(0.0f, glm::dot(normal, half_light_view)), phong);
 
                 diffuse += light_intensity * diffuse_coeff;

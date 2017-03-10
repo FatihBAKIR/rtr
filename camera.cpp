@@ -19,7 +19,6 @@ namespace rtr
     camera::render(const scene& scene) const
     {
         using namespace physics;
-        using namespace boost::gil;
 
         const auto one_down = - plane.pix_h * t.up;
         const auto one_right = plane.pix_w * t.right;
@@ -39,7 +38,7 @@ namespace rtr
                 auto res = scene.ray_cast(r);
                 if (res)
                 {
-                    const auto& c = res->mat->calculate_color(scene, -r.dir, res->position, res->normal);
+                    const auto& c = glm::clamp(res->mat->calculate_color(scene, -r.dir, res->position, res->normal), .0f, 255.f);
                     v(col, row) = pix_type(half(c[0]), half(c[1]), half(c[2]));
                 }
 
