@@ -35,12 +35,23 @@ namespace shapes
 
     public:
 
+        struct param_res_t
+        {
+            float parameter;
+            struct
+            {
+                float alpha;
+                float beta;
+                float gamma;
+            } data;
+        };
+
         triangle(const std::array<glm::vec3, 3>& vs) : vertices(vs)
         {
             m_normal = glm::normalize(glm::cross(verts.b - verts.a, verts.c - verts.a));
         }
 
-        boost::optional<float> get_parameter(const physics::ray& ray) const;
+        boost::optional<param_res_t> get_parameter(const physics::ray& ray) const;
 
         gsl::span<const glm::vec3> get_vertices() const
         {

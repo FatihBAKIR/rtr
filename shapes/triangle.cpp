@@ -19,7 +19,7 @@ namespace rtr {
             return physics::intersect(a, t.get_vertices());
         }
 
-        boost::optional<float> triangle::get_parameter(const physics::ray& ray) const
+        boost::optional<triangle::param_res_t> triangle::get_parameter(const physics::ray& ray) const
         {
             auto a_c1 = verts.a - verts.b;
             auto a_c2 = verts.a - verts.c;
@@ -36,7 +36,7 @@ namespace rtr {
                 return {};
             }
 
-            return param;
+            return {param_res_t{param, { 1 - beta - gamma, beta, gamma }}};
         }
     }
 }

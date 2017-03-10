@@ -75,16 +75,23 @@ read_mesh(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const std::un
     long mat_id;
 
     mat_id = elem->FirstChildElement("Material")->Int64Text();
+
+    boost::container::vector<long> face_indices;
     boost::container::vector<rtr::shapes::triangle> faces;
 
     auto vert_text = elem->FirstChildElement("Faces")->GetText();
     std::istringstream iss(vert_text);
     for (std::array<long, 3> v; iss >> v[0] >> v[1] >> v[2];) {
+        face_indices.push_back(v[0]);
+        face_indices.push_back(v[1]);
+        face_indices.push_back(v[2]);
         faces.emplace_back(std::array<glm::vec3, 3>{verts[v[0]], verts[v[1]], verts[v[2]]});
     }
 
     auto mat_it = mats.find(mat_id);
-    return {std::move(faces), &(*mat_it).second};
+    rtr::shapes::mesh m {std::move(faces), std::move(face_indices), &(*mat_it).second};
+    m.smooth_normals();
+    return m;
 }
 
 void read_objects(const xml::XMLElement* elem, gsl::span<glm::vec3> verts,

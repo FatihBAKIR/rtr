@@ -8,6 +8,10 @@
 #include <physics/ray.hpp>
 #include <utility.hpp>
 #include <chrono>
+#include <unordered_map>
+#include <boost/container/static_vector.hpp>
+#include <boost/container/flat_map.hpp>
+#include <shapes.hpp>
 
 namespace rtr
 {
@@ -63,22 +67,28 @@ namespace shapes
         return partition;
     }
 
-
-    physics::ray_hit mesh::intersect(const physics::ray& ray, float parameter, const triangle* tri) const
+    physics::ray_hit mesh::intersect(const physics::ray& ray, float parameter, data_t& data) const
     {
-        return physics::ray_hit{ ray, mat, ray.origin + ray.dir * parameter, tri->get_normal() , parameter };
+        auto tri_index = data.tri - tris.data();
+        auto normal_1 = vert_normals[tri_index * 3];
+        auto normal_2 = vert_normals[tri_index * 3 + 1];
+        auto normal_3 = vert_normals[tri_index * 3 + 2];
+
+        auto normal = glm::normalize(normal_1 * data.alpha + normal_2 * data.beta + normal_3 * data.gamma);
+
+        return physics::ray_hit{ ray, mat, ray.origin + ray.dir * parameter, normal, parameter };
     }
 
     mesh::~mesh() noexcept = default;
 
-    mesh::mesh(boost::container::vector<triangle> tris, const material* m)
-            : tris(std::move(tris)), part(partition(this->tris)), mat(m)
+    mesh::mesh(boost::container::vector<triangle> tris, bvector<long> indices, const material* m)
+            : tris(std::move(tris)), face_indices(std::move(indices)), part(partition(this->tris)), mat(m)
     {
     }
 
     boost::optional<mesh::param_res_t> mesh::get_parameter(const rtr::physics::ray& ray) const
     {
-        float cur_param = std::numeric_limits<float>::infinity();
+        triangle::param_res_t cur_param = {std::numeric_limits<float>::infinity(), {}};
         const triangle* cur_hit = nullptr;
 
         std::queue<const octree_type*> q;
@@ -107,7 +117,7 @@ namespace shapes
                 if (p)
                 {
                     auto param = *p;
-                    if (param < cur_param)
+                    if (param.parameter < cur_param.parameter)
                     {
                         cur_param = param;
                         cur_hit = shape;
@@ -121,15 +131,47 @@ namespace shapes
             return {};
         }
 
-        return { {cur_param, cur_hit} };
+        return { {cur_param.parameter, {cur_hit, cur_param.data.alpha, cur_param.data.beta, cur_param.data.gamma}} };
     }
 
     mesh::mesh(mesh && rhs) noexcept :
         tris(std::move(rhs.tris)),
         part(std::move(rhs.part)),
+        face_indices(std::move(rhs.face_indices)),
+        vert_normals(std::move(rhs.vert_normals)),
         mat(rhs.mat)
     {
 
+    }
+
+    void mesh::smooth_normals()
+    {
+        using map_t = boost::container::flat_map<long, boost::container::static_vector<triangle*, 16>>;
+        map_t vertex_tris;
+
+        for (std::size_t i = 0; i < face_indices.size(); ++i) {
+            auto tri_index = i / 3;
+            vertex_tris[face_indices[i]].push_back(&tris[tri_index]);
+        }
+
+        boost::container::flat_map<long, glm::vec3> normals;
+
+        for (auto& elem : vertex_tris)
+        {
+            normals[elem.first] = {};
+            for (auto& tri : elem.second)
+            {
+                normals[elem.first] += tri->get_normal();
+            }
+            normals[elem.first] /= (float)elem.second.size();
+        }
+
+        vert_normals.clear();
+        vert_normals.resize(tris.size() * 3);
+        for (std::size_t i = 0; i < face_indices.size(); ++i)
+        {
+            vert_normals[i] = normals[face_indices[i]];
+        }
     }
 }
 }

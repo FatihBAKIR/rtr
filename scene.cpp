@@ -52,14 +52,16 @@ bool rtr::scene::ray_cast_param(const physics::ray& ray, float min_param, float 
     return res;
 }
 
+template <class ShapeT>
+using shape_ptr_data_tuple = std::tuple<const ShapeT*, decltype(std::declval<typename ShapeT::param_res_t>().data)>;
+
 boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::ray &ray) const {
-    using const_shapes = png::map_t<png::mapper<std::add_const_t>, shape_list>;
-    using shape_pointers = png::map_t<png::mapper<std::add_pointer_t>, const_shapes>;
+
+    using shape_pointers = png::map_t<png::mapper<shape_ptr_data_tuple>, shape_list>;
     using shape_variant = png::convert_t<boost::variant, shape_pointers>;
 
     boost::optional<shape_variant> cur_hit;
     float cur_param = std::numeric_limits<float>::infinity();
-    const void* shape_data = nullptr;
 
     std::queue<const octree_type*> q;
     q.push(&part);
@@ -90,8 +92,7 @@ boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::
                 if (param.parameter < cur_param)
                 {
                     cur_param = param.parameter;
-                    shape_data = param.data;
-                    cur_hit = shape;
+                    cur_hit = std::make_tuple(shape, param.data);
                 }
             }
         });
@@ -103,12 +104,11 @@ boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::
     }
 
     boost::optional<rtr::physics::ray_hit> res;
-    boost::apply_visitor([&](auto shape)
+    boost::apply_visitor([&](auto hit)
     {
-        using shape_t = std::remove_const_t <std::remove_pointer_t <decltype(shape)>>;
-        using param_t = typename shape_t::param_res_t;
-        using data_t = decltype(std::declval<param_t>().data);
-        res = shape->intersect(ray, cur_param, static_cast<data_t>(shape_data));
+        auto& shape = std::get<0>(hit);
+        auto& data = std::get<1>(hit);
+        res = shape->intersect(ray, cur_param, data);
     }, *cur_hit);
     return res;
 }
