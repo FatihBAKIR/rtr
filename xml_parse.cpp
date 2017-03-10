@@ -18,6 +18,8 @@
 #include <unordered_map>
 
 namespace xml = tinyxml2;
+namespace
+{
 
 rtr::camera read_camera(const xml::XMLElement* elem)
 {
@@ -52,7 +54,8 @@ rtr::camera read_camera(const xml::XMLElement* elem)
     return {pos, up, gaze, plane};
 }
 
-rtr::shapes::sphere read_sphere(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const std::unordered_map<long, rtr::material>& mats)
+rtr::shapes::sphere read_sphere(const xml::XMLElement* elem, gsl::span<glm::vec3> verts,
+        const std::unordered_map<long, rtr::material>& mats)
 {
     long mat_id;
     long vert_id;
@@ -66,7 +69,8 @@ rtr::shapes::sphere read_sphere(const xml::XMLElement* elem, gsl::span<glm::vec3
     return rtr::shapes::sphere(verts[vert_id], radius, &(*mat_it).second);
 }
 
-rtr::shapes::mesh read_mesh(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const std::unordered_map<long, rtr::material>& mats)
+rtr::shapes::mesh
+read_mesh(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const std::unordered_map<long, rtr::material>& mats)
 {
     long mat_id;
 
@@ -80,30 +84,29 @@ rtr::shapes::mesh read_mesh(const xml::XMLElement* elem, gsl::span<glm::vec3> ve
     }
 
     auto mat_it = mats.find(mat_id);
-    return { std::move(faces), &(*mat_it).second };
+    return {std::move(faces), &(*mat_it).second};
 }
 
-void read_objects(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const std::unordered_map<long, rtr::material>& mats, rtr::scene& sc)
+void read_objects(const xml::XMLElement* elem, gsl::span<glm::vec3> verts,
+        const std::unordered_map<long, rtr::material>& mats, rtr::scene& sc)
 {
     glm::vec3 scene_min, scene_max;
     float max_radius = 0;
 
     for (auto s = elem->FirstChildElement(); s; s = s->NextSiblingElement()) {
-        if (s->Name()==std::string("Mesh") || s->Name() == std::string("Triangle")) {
+        if (s->Name()==std::string("Mesh") || s->Name()==std::string("Triangle")) {
             sc.insert(read_mesh(s, verts, mats));
         }
         else if (s->Name()==std::string("Sphere")) {
             auto&& sphere = read_sphere(s, verts, mats);
-            if (sphere.get_radius() > max_radius)
-            {
-                auto growth = sphere.get_radius() - max_radius;
+            if (sphere.get_radius()>max_radius) {
+                auto growth = sphere.get_radius()-max_radius;
                 max_radius = sphere.get_radius();
-                sc.resize(sc.get_box().position, sc.get_box().extent + glm::vec3(growth, growth, growth) * 2.f);
+                sc.resize(sc.get_box().position, sc.get_box().extent+glm::vec3(growth, growth, growth)*2.f);
             }
             sc.insert(sphere);
         }
-        else
-        {
+        else {
             abort();
         }
     }
@@ -114,7 +117,7 @@ rtr::lights::ambient_light read_ambient(const xml::XMLElement* elem)
     std::istringstream iss(elem->GetText());
     glm::vec3 color;
     iss >> color[0] >> color[1] >> color[2];
-    return { color };
+    return {color};
 }
 
 rtr::lights::point_light read_point(const xml::XMLElement* elem)
@@ -127,23 +130,19 @@ rtr::lights::point_light read_point(const xml::XMLElement* elem)
     iss = std::istringstream(elem->FirstChildElement("Intensity")->GetText());
     iss >> inte[0] >> inte[1] >> inte[2];
 
-    return { pos, inte };
+    return {pos, inte};
 }
 
 void read_lights(const xml::XMLElement* elem, rtr::scene& sc)
 {
-    for (auto l = elem->FirstChildElement(); l; l = l->NextSiblingElement())
-    {
-        if (l->Name() == std::string("AmbientLight"))
-        {
+    for (auto l = elem->FirstChildElement(); l; l = l->NextSiblingElement()) {
+        if (l->Name()==std::string("AmbientLight")) {
             sc.insert(read_ambient(l));
         }
-        else if (l->Name() == std::string("PointLight"))
-        {
+        else if (l->Name()==std::string("PointLight")) {
             sc.insert(read_point(l));
         }
-        else
-        {
+        else {
             abort();
         }
     }
@@ -172,73 +171,77 @@ rtr::material read_material(const xml::XMLElement* elem)
 
     return m;
 }
-
-std::pair<rtr::scene, std::vector<rtr::camera>> read_scene(const std::string& path)
-{
-    namespace xml = tinyxml2;
-
-    xml::XMLDocument doc;
-    doc.LoadFile(path.c_str());
-
-    glm::vec3 bg;
-    float ray_epsilon, intersect_epsilon;
-
-    auto root = doc.FirstChildElement("Scene");
-    std::cout << root->FirstChildElement("BackgroundColor")->GetText() << '\n';
-
-    if (root->FirstChildElement("ShadowRayEpsilon"))
-    {
-        ray_epsilon = root->FirstChildElement("ShadowRayEpsilon")->FloatText(0);
-    }
-    if (root->FirstChildElement("IntersectionTestEpsilon"))
-    {
-        intersect_epsilon = root->FirstChildElement("IntersectionTestEpsilon")->FloatText(0);
-    }
-
-    std::vector<rtr::camera> cams;
-    auto cameras = root->FirstChildElement("Cameras");
-    for (auto c = cameras->FirstChildElement(); c; c = c->NextSiblingElement()) {
-        cams.push_back(read_camera(c));
-    }
-
-    std::unordered_map<long, rtr::material> mats;
-    auto materials = root->FirstChildElement("Materials");
-    for (auto c = materials->FirstChildElement(); c; c = c->NextSiblingElement()) {
-        auto&& m = read_material(c);
-        mats.emplace(m.id, std::move(m));
-    }
-
-    glm::vec3 min = { 10000, 10000, 10000 }, max = { -10000, -10000, -10000 };
-
-    auto up_min_max = [&](const glm::vec3& vert) {
-        for (int j = 0; j<3; ++j) {
-            if (min[j]>vert[j]) {
-                min[j] = vert[j];
-            }
-            if (max[j]<vert[j]) {
-                max[j] = vert[j];
-            }
-        }
-    };
-
-    std::vector<glm::vec3> vert_pos (1);
-    auto vert_text = root->FirstChildElement("VertexData")->GetText();
-    std::istringstream iss(vert_text);
-    for (glm::vec3 v; iss >> v[0] >> v[1] >> v[2];) {
-        vert_pos.push_back(v);
-        up_min_max(v);
-    }
-
-    glm::vec3 center = (min + max) * 0.5f;
-    glm::vec3 ext = max - min;
-
-    rtr::scene s {center, ext, std::move(mats)};
-
-    auto objs_root = root->FirstChildElement("Objects");
-    auto lights = root->FirstChildElement("Lights");
-
-    read_objects(objs_root, vert_pos, s.materials(), s);
-    read_lights(lights, s);
-
-    return std::make_pair(std::move(s), std::move(cams));
 }
+
+namespace rtr {
+    namespace xml {
+        std::pair<rtr::scene, std::vector<rtr::camera>> read_scene(const std::string& path)
+        {
+            namespace xml = tinyxml2;
+
+            xml::XMLDocument doc;
+            doc.LoadFile(path.c_str());
+
+            glm::vec3 bg;
+            float ray_epsilon, intersect_epsilon;
+
+            auto root = doc.FirstChildElement("Scene");
+            std::cout << root->FirstChildElement("BackgroundColor")->GetText() << '\n';
+
+            if (root->FirstChildElement("ShadowRayEpsilon")) {
+                ray_epsilon = root->FirstChildElement("ShadowRayEpsilon")->FloatText(0);
+            }
+            if (root->FirstChildElement("IntersectionTestEpsilon")) {
+                intersect_epsilon = root->FirstChildElement("IntersectionTestEpsilon")->FloatText(0);
+            }
+
+            std::vector<rtr::camera> cams;
+            auto cameras = root->FirstChildElement("Cameras");
+            for (auto c = cameras->FirstChildElement(); c; c = c->NextSiblingElement()) {
+                cams.push_back(read_camera(c));
+            }
+
+            std::unordered_map<long, rtr::material> mats;
+            auto materials = root->FirstChildElement("Materials");
+            for (auto c = materials->FirstChildElement(); c; c = c->NextSiblingElement()) {
+                auto&& m = read_material(c);
+                mats.emplace(m.id, std::move(m));
+            }
+
+            glm::vec3 min = {10000, 10000, 10000}, max = {-10000, -10000, -10000};
+
+            auto up_min_max = [&](const glm::vec3& vert) {
+                for (int j = 0; j<3; ++j) {
+                    if (min[j]>vert[j]) {
+                        min[j] = vert[j];
+                    }
+                    if (max[j]<vert[j]) {
+                        max[j] = vert[j];
+                    }
+                }
+            };
+
+            std::vector<glm::vec3> vert_pos(1);
+            auto vert_text = root->FirstChildElement("VertexData")->GetText();
+            std::istringstream iss(vert_text);
+            for (glm::vec3 v; iss >> v[0] >> v[1] >> v[2];) {
+                vert_pos.push_back(v);
+                up_min_max(v);
+            }
+
+            glm::vec3 center = (min+max)*0.5f;
+            glm::vec3 ext = max-min;
+
+            rtr::scene s{center, ext, std::move(mats)};
+
+            auto objs_root = root->FirstChildElement("Objects");
+            auto lights = root->FirstChildElement("Lights");
+
+            read_objects(objs_root, vert_pos, s.materials(), s);
+            read_lights(lights, s);
+
+            return std::make_pair(std::move(s), std::move(cams));
+        }
+    }
+}
+

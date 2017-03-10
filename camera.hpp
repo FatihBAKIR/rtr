@@ -6,8 +6,7 @@
 #include <rtr_fwd.hpp>
 #include <transform.hpp>
 #include <glm/glm.hpp>
-#include <boost/gil/gil_all.hpp>
-#include <gil_extension/exr/half/typedefs.hpp>
+#include <render_configs.hpp>
 
 namespace rtr
 {
@@ -45,10 +44,13 @@ class camera
     im_plane plane;
 
 public:
+    using render_type = render_config::hdr_render;
+
     camera(const glm::vec3& pos, const glm::vec3& up, const glm::vec3& gaze, const im_plane& p) :
             t{pos, up, -gaze, glm::cross(up, -gaze)}, plane{p} {}
 
-    boost::gil::rgb16f_image_t render(const scene& scene) const;
+    typename render_config::render_traits<render_type>::image_type
+    render(const scene& scene) const;
 
     const transform& get_transform() const
     {

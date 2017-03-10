@@ -45,7 +45,7 @@ public:
 
 		Imf::FrameBuffer frameBuffer;
 
-		for( int i=0;i<n;++i)
+		for( std::size_t i=0;i<n;++i)
 			frameBuffer.insert( detail::exr_color_space_traits<color_space_t>::channel_name[i], Imf::Slice( Imf::FLOAT, 0, 0, 0, 1, 1, 0.0));
 		
 		std::size_t xstride = sizeof( pixel_t);
@@ -61,7 +61,7 @@ public:
 		for( int y=y0;y<y1;++y)
 		{
 			char *p = ptr;
-			for( int i=0;i<n;++i)
+			for( std::size_t i=0;i<n;++i)
 			{
 				const char *cname = detail::exr_color_space_traits<color_space_t>::channel_name[i];
 				frameBuffer[cname] = Imf::Slice( detail::exr_channel2pixel_type<channel_t>::value, p, xstride, ystride, 1, 1, 0.0);

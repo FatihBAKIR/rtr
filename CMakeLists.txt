@@ -5,7 +5,7 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 set(CMAKE_CXX_STANDARD 14)
 
 set(DEBUG_FLAGS "-g -O0")
-set(RELEASE_FLAGS "-pthread -Ofast -march=native -fno-rtti")
+set(RELEASE_FLAGS "-Ofast -march=native -fno-rtti")
 
 if (CMAKE_BUILD_TYPE MATCHES "Release")
     message("Performance Build")
@@ -19,17 +19,40 @@ if (CMAKE_C_COMPILER_ID MATCHES "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -static-libgcc")
 endif()
 
-set (COMMON_FILES physics/ray.cpp physics/ray.hpp camera.cpp camera.hpp transform.hpp scene.hpp shapes/sphere.cpp
-        shapes/sphere.hpp materials/material.hpp rtr_fwd.hpp shapes/triangle.cpp shapes/triangle.hpp vertex.hpp physics/octree.hpp
-        physics/collision.hpp physics/collision.cpp physics/aabb.hpp shapes/mesh.cpp shapes/mesh.hpp scene.cpp
-        rtr_config.hpp meta_list.hpp physics/aabb_tri_intersect.cpp 3rd_party/tinyxml2/tinyxml2.cpp xml_parse.cpp
-        xml_parse.hpp utility.hpp utility.cpp materials/material.cpp lights/ambient_light.hpp lights.hpp shapes.hpp lights/point_light.hpp)
+set (LIGHT_FILES lights/point_light.hpp lights/ambient_light.hpp)
+set (SHAPE_FILES
+        shapes/mesh.hpp shapes/mesh.cpp
+        shapes/sphere.hpp shapes/sphere.cpp
+        shapes/triangle.hpp shapes/triangle.cpp)
+set (PHYSICS_FILES
+        physics/ray.cpp physics/ray.hpp
+        physics/octree.hpp
+        physics/collision.hpp physics/collision.cpp
+        physics/aabb.hpp
+        physics/aabb_tri_intersect.cpp)
+
+set (TinyXML_FILES 3rd_party/tinyxml2/tinyxml2.cpp)
+
+set (COMMON_FILES ${LIGHT_FILES} ${SHAPE_FILES} ${TinyXML_FILES} ${PHYSICS_FILES}
+        camera.cpp camera.hpp
+        transform.hpp
+        scene.hpp scene.cpp
+        materials/material.hpp
+        rtr_fwd.hpp
+        rtr_config.hpp
+        vertex.hpp
+        meta_list.hpp
+        xml_parse.cpp xml_parse.hpp
+        utility.hpp utility.cpp
+        materials/material.cpp
+        lights.hpp
+        shapes.hpp render_configs.hpp)
 
 set (GIL_HDR_FILES gil_extension/exr/detail/color_space_traits.cpp)
 
-set(TEST_FILES ${GIL_HDR_FILES} ${COMMON_FILES} tests/physics/collisions.cpp tests/tests_main.cpp)
+set (TEST_FILES ${GIL_HDR_FILES} ${COMMON_FILES} tests/physics/collisions.cpp tests/tests_main.cpp)
 
-set(SOURCE_FILES ${GIL_HDR_FILES} ${COMMON_FILES} main.cpp)
+set (SOURCE_FILES ${GIL_HDR_FILES} ${COMMON_FILES} main.cpp)
 
 if(MSVC)
     if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
@@ -68,6 +91,7 @@ if (OpenEXR_FOUND)
     message("Found OpenEXR, Building EXR Output Support")
 
     target_compile_definitions(ray PRIVATE RTR_OPENEXR_SUPPORT=1)
+
     target_include_directories(ray PUBLIC ${OPENEXR_INCLUDE_DIRS})
     target_link_libraries(ray ${OPENEXR_LIBRARIES})
 endif()
