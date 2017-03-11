@@ -64,7 +64,7 @@ namespace physics
 
     collide_result intersect(const aabb& box, const ray& ray)
     {
-        const auto inv = glm::vec3(1.f, 1.f, 1.f) / ray.dir;
+        const auto inv = ray.get_inverse();
 
         float t1 = (box.min[0] - ray.origin[0]) * inv[0];
         float t2 = (box.max[0] - ray.origin[0]) * inv[0];

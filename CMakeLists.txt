@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.6)
-project(ray)
+project(rtr)
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
 set(CMAKE_CXX_STANDARD 14)
