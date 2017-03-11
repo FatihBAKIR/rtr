@@ -24,7 +24,7 @@ namespace rtr
                 auto normalized_ptol = point_to_light / len;
 
                 auto shadow_ray = physics::ray(pos + 0.001f * normalized_ptol, normalized_ptol);
-                auto res = scene.ray_cast_param(shadow_ray, -0.001, len);
+                auto res = scene.ray_cast_param(shadow_ray, -0.001f, len);
                 if (res) return;
 
                 auto light_intensity = pl->intensity_at(pos);

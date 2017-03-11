@@ -90,7 +90,10 @@ read_mesh(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const std::un
 
     auto mat_it = mats.find(mat_id);
     rtr::shapes::mesh m {std::move(faces), std::move(face_indices), &(*mat_it).second};
-    m.smooth_normals();
+    if (elem->Attribute("shadingMode") && elem->Attribute("shadingMode") == std::string("smooth"))
+    {
+        m.smooth_normals();
+    }
     return m;
 }
 

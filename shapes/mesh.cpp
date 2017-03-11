@@ -69,12 +69,20 @@ namespace shapes
 
     physics::ray_hit mesh::intersect(const physics::ray& ray, float parameter, data_t& data) const
     {
-        auto tri_index = data.tri - tris.data();
-        auto normal_1 = vert_normals[tri_index * 3];
-        auto normal_2 = vert_normals[tri_index * 3 + 1];
-        auto normal_3 = vert_normals[tri_index * 3 + 2];
+        glm::vec3 normal;
+        if (vert_normals.size())
+        {
+            auto tri_index = data.tri - tris.data();
+            const auto& normal_1 = vert_normals[tri_index * 3];
+            const auto& normal_2 = vert_normals[tri_index * 3 + 1];
+            const auto& normal_3 = vert_normals[tri_index * 3 + 2];
 
-        auto normal = glm::normalize(normal_1 * data.alpha + normal_2 * data.beta + normal_3 * data.gamma);
+            normal = glm::normalize(normal_1 * data.alpha + normal_2 * data.beta + normal_3 * data.gamma);
+        }
+        else
+        {
+            normal = data.tri->get_normal();
+        }
 
         return physics::ray_hit{ ray, mat, ray.origin + ray.dir * parameter, normal, parameter };
     }
@@ -146,7 +154,7 @@ namespace shapes
 
     void mesh::smooth_normals()
     {
-        using map_t = boost::container::flat_map<long, boost::container::static_vector<triangle*, 16>>;
+        using map_t = boost::container::flat_map<long, boost::container::vector<triangle*>>;
         map_t vertex_tris;
 
         for (std::size_t i = 0; i < face_indices.size(); ++i) {
