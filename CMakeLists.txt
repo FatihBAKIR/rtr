@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.5)
 project(rtr)
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
@@ -10,9 +10,21 @@ set(RELEASE_FLAGS "-Ofast -march=native -fno-rtti")
 if (CMAKE_BUILD_TYPE MATCHES "Release")
     message("Performance Build")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${RELEASE_FLAGS}")
+    include(FindSSE)
+    if (HAVE_SSE2_EXTENSIONS)
+        message("Target has SSE4.2")
+        add_definitions(-DGLM_FORCE_SSE42)
+        add_definitions(-DGLM_FORCE_ALIGNED)
+    endif()
+    add_definitions(-DRTR_BUILD_TYPE=1)
 elseif(CMAKE_BUILD_TYPE MATCHES "Debug")
     message("Debug Build")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEBUG_FLAGS}")
+    add_definitions(-DRTR_BUILD_TYPE=0)
+endif()
+
+if (UNIX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 endif()
 
 if (CMAKE_C_COMPILER_ID MATCHES "GNU")
@@ -46,7 +58,7 @@ set (COMMON_FILES ${LIGHT_FILES} ${SHAPE_FILES} ${TinyXML_FILES} ${PHYSICS_FILES
         utility.hpp utility.cpp
         materials/material.cpp
         lights.hpp
-        shapes.hpp render_configs.hpp)
+        shapes.hpp render_configs.hpp static_storage.cpp)
 
 set (GIL_HDR_FILES gil_extension/exr/detail/color_space_traits.cpp)
 
@@ -74,6 +86,7 @@ target_compile_definitions(ray PRIVATE)
 find_package(Boost REQUIRED COMPONENTS system thread filesystem)
 find_package(PNG)
 find_package(OpenEXR)
+find_package(Spdlog)
 
 target_include_directories(ray PUBLIC ${CMAKE_SOURCE_DIR})
 
@@ -83,7 +96,6 @@ target_include_directories(ray PUBLIC ${Boost_INCLUDE_DIRS})
 target_include_directories(ray PUBLIC 3rd_party/gsl/include)
 target_include_directories(ray PUBLIC 3rd_party/glm)
 target_include_directories(ray PUBLIC 3rd_party/tinyxml2)
-
 
 if (PNG_FOUND)
     message("Found PNG, Building PNG Output Support")
@@ -101,6 +113,14 @@ if (OpenEXR_FOUND)
 
     target_include_directories(ray PUBLIC ${OPENEXR_INCLUDE_DIRS})
     target_link_libraries(ray ${OPENEXR_LIBRARIES})
+endif()
+
+if (spdlog_FOUND)
+    message("Found Spdlog, Building logging support")
+
+    target_compile_definitions(ray PRIVATE RTR_SPDLOG_SUPPORT=1)
+
+    target_include_directories(ray PUBLIC ${SPDLOG_INCLUDE_DIR})
 endif()
 
 target_include_directories(tests PUBLIC ${CMAKE_SOURCE_DIR})

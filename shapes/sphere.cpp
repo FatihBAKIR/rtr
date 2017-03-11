@@ -20,6 +20,7 @@ namespace shapes
 
         float B = 2 * (glm::dot(ray.dir, line));
         float C = glm::length2(line) - r2;
+        float minus_B = -B;
 
         float delta = B * B - 4 * C;
 
@@ -28,7 +29,7 @@ namespace shapes
             return {};
         }
 
-        float root = (-B - std::sqrt(delta)) * 0.5f;
+        float root = minus_B - std::sqrt(delta);
 
         if (root < 0)
         {
@@ -36,7 +37,7 @@ namespace shapes
             {
                 return {};
             }
-            root = (-B + std::sqrt(delta)) * 0.5f;
+            root = minus_B + std::sqrt(delta);
 
             if (root < 0)
             {
@@ -44,7 +45,7 @@ namespace shapes
             }
         }
 
-        return { {root, nullptr} };
+        return { {root * 0.5f, nullptr} };
     }
 
     physics::ray_hit sphere::intersect(const physics::ray& ray, float parameter, const void*) const

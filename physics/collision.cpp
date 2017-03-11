@@ -66,15 +66,20 @@ namespace physics
     {
         const auto inv = ray.get_inverse();
 
-        float t1 = (box.min[0] - ray.origin[0]) * inv[0];
-        float t2 = (box.max[0] - ray.origin[0]) * inv[0];
+        const auto& diff1 = box.min - ray.origin;
+        const auto& diff2 = box.max - ray.origin;
+        const auto& t = diff1 * inv;
+        const auto& tt = diff2 * inv;
+
+        auto& t1 = t[0];
+        auto& t2 = tt[0];
 
         float tMin = std::min(t1, t2);
         float tMax = std::max(t1, t2);
 
         for (int i = 1; i < 3; ++i) {
-            t1 = (box.min[i] - ray.origin[i]) * inv[i];
-            t2 = (box.max[i] - ray.origin[i]) * inv[i];
+            auto& t1 = t[i];
+            auto& t2 = tt[i];
 
             tMin = std::max(tMin, std::min(t1, t2));
             tMax = std::min(tMax, std::max(t1, t2));
@@ -82,6 +87,5 @@ namespace physics
 
         return tMax >= std::max(.0f, tMin);
     }
-
 }
 }

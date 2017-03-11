@@ -8,6 +8,8 @@
     #include <gil_extension/exr/half/typedefs.hpp>
 #endif
 
+#include <glm/glm.hpp>
+
 namespace rtr
 {
 namespace render_config
@@ -17,7 +19,14 @@ template <class>
 struct render_traits;
 
 #if RTR_OPENEXR_SUPPORT
-    struct hdr_render;
+    struct hdr_render
+    {
+        static constexpr auto name = "HDR Render";
+        static glm::vec3 process(const glm::vec3& v)
+        {
+            return v;
+        }
+    };
     template <>
     struct render_traits<hdr_render>
     {
@@ -25,7 +34,15 @@ struct render_traits;
     };
 #endif
 
-    struct ldr_render;
+    struct ldr_render
+    {
+        static constexpr auto name = "LDR Render";
+        static glm::vec3 process(const glm::vec3& v)
+        {
+            return glm::clamp(v, 0.f, 255.f);
+        }
+    };
+
     template <>
     struct render_traits<ldr_render>
     {

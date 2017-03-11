@@ -27,16 +27,19 @@ namespace rtr {
             auto b = verts.a - ray.origin;
 
             auto detA = determinant(a_c1, a_c2, a_c3);
-            auto beta = determinant(b, a_c2, a_c3) / detA;
-            auto gamma = determinant(a_c1, b, a_c3) / detA;
-            auto param = determinant(a_c1, a_c2, b) / detA;
+            auto one_over = 1 / detA;
 
-            if (beta < -0.0001 || gamma < -0.0001 || (1 - beta - gamma) < -0.0001 || param < -0.0001)
+            auto beta = determinant(b, a_c2, a_c3) * one_over;
+            auto gamma = determinant(a_c1, b, a_c3) * one_over;
+            auto param = determinant(a_c1, a_c2, b) * one_over;
+            auto alpha = 1 - beta - gamma;
+
+            if (beta < -0.0001 || gamma < -0.0001 || alpha < -0.0001 || param < -0.0001)
             {
                 return {};
             }
 
-            return {param_res_t{param, { 1 - beta - gamma, beta, gamma }}};
+            return {param_res_t{param, { alpha, beta, gamma }}};
         }
     }
 }

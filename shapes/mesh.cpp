@@ -13,12 +13,18 @@
 #include <boost/container/flat_map.hpp>
 #include <shapes.hpp>
 
+#include <spdlog/spdlog.h>
+
 namespace rtr
 {
 namespace shapes
 {
     physics::octree<triangle> partition(gsl::span<triangle> tris)
     {
+        auto logger = spdlog::stderr_logger_st("mesh data");
+        logger->info("Partitioning mesh into octree");
+        logger->info("Mesh has {0} tris", tris.size());
+
         auto begin = std::chrono::high_resolution_clock::now();
         glm::vec3 min = tris[0].get_vertices()[0];
         glm::vec3 max = tris[0].get_vertices()[0];
@@ -41,12 +47,10 @@ namespace shapes
             }
         }
 
-        std::cerr << "mesh min,max: " << min << ", " << max << '\n';
-
         const auto center = (max + min) * 0.5f;
         const auto extent = (max - min);
 
-        std::cerr << "mesh octree: " << center << ", " << extent << '\n';
+        logger->info("Octree: [{0}, {1}]", center, extent);
 
         physics::octree<triangle> partition(center, extent);
 
@@ -62,14 +66,15 @@ namespace shapes
 
         auto end = std::chrono::high_resolution_clock::now();
 
-        std::cout << "Octree generation took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "ms\n";
+        logger->info("Partitioning took {0} ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count());
 
         return partition;
     }
 
     physics::ray_hit mesh::intersect(const physics::ray& ray, float parameter, data_t& data) const
     {
-        glm::vec3 normal;
+        glm::vec3 normal = data.tri->get_normal();
+
         if (vert_normals.size())
         {
             auto tri_index = data.tri - tris.data();
@@ -78,10 +83,6 @@ namespace shapes
             const auto& normal_3 = vert_normals[tri_index * 3 + 2];
 
             normal = glm::normalize(normal_1 * data.alpha + normal_2 * data.beta + normal_3 * data.gamma);
-        }
-        else
-        {
-            normal = data.tri->get_normal();
         }
 
         return physics::ray_hit{ ray, mat, ray.origin + ray.dir * parameter, normal, parameter };
@@ -99,40 +100,19 @@ namespace shapes
         triangle::param_res_t cur_param = {std::numeric_limits<float>::infinity(), {}};
         const triangle* cur_hit = nullptr;
 
-        std::queue<const octree_type*> q;
-        q.push(&part);
-
-        using physics::intersect;
-
-        while (!q.empty())
+        traverse_octree(part, ray, [&](const triangle* tri)
         {
-            const octree_type* oc = q.front();
-            q.pop();
-
-            if (!intersect(oc->bounding_box(), ray))
+            auto p = tri->get_parameter(ray);
+            if (p)
             {
-                continue;
-            }
-
-            for (auto& c : oc->get_children())
-            {
-                q.push(&c);
-            }
-
-            oc->for_shapes([&](auto shape)
-            {
-                auto p = shape->get_parameter(ray);
-                if (p)
+                auto param = *p;
+                if (param.parameter < cur_param.parameter)
                 {
-                    auto param = *p;
-                    if (param.parameter < cur_param.parameter)
-                    {
-                        cur_param = param;
-                        cur_hit = shape;
-                    }
+                    cur_param = param;
+                    cur_hit = tri;
                 }
-            });
-        }
+            }
+        });
 
         if (!cur_hit)
         {
@@ -149,7 +129,6 @@ namespace shapes
         vert_normals(std::move(rhs.vert_normals)),
         mat(rhs.mat)
     {
-
     }
 
     void mesh::smooth_normals()

@@ -7,6 +7,7 @@
 #include <transform.hpp>
 #include <glm/glm.hpp>
 #include <render_configs.hpp>
+#include "rtr_config.hpp"
 
 namespace rtr
 {
@@ -46,7 +47,7 @@ class camera
 public:
     using render_type = render_config::ldr_render;
 
-    camera(const glm::vec3& pos, const glm::vec3& up, const glm::vec3& gaze, const im_plane& p) :
+    camera(const config::position_t & pos, const config::vector_t& up, const config::vector_t & gaze, const im_plane& p) :
             t{pos, up, -gaze, glm::cross(up, -gaze)}, plane{p} {}
 
     typename render_config::render_traits<render_type>::image_type

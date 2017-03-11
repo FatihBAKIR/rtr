@@ -63,40 +63,19 @@ boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::
     boost::optional<shape_variant> cur_hit;
     float cur_param = std::numeric_limits<float>::infinity();
 
-    std::queue<const octree_type*> q;
-    q.push(&part);
-
-    using physics::intersect;
-
-    while (!q.empty())
+    traverse_octree(part, ray, [&](auto* shape)
     {
-        const octree_type* oc = q.front();
-        q.pop();
-
-        if (!intersect(oc->bounding_box(), ray))
+        auto p = shape->get_parameter(ray);
+        if (p)
         {
-            continue;
-        }
-
-        for (auto& c : oc->get_children())
-        {
-            q.push(&c);
-        }
-
-        oc->for_shapes([&](auto shape)
-        {
-            auto p = shape->get_parameter(ray);
-            if (p)
+            auto& param = *p;
+            if (param.parameter < cur_param)
             {
-                auto& param = *p;
-                if (param.parameter < cur_param)
-                {
-                    cur_param = param.parameter;
-                    cur_hit = std::make_tuple(shape, param.data);
-                }
+                cur_param = param.parameter;
+                cur_hit = std::make_tuple(shape, param.data);
             }
-        });
-    }
+        }
+    });
 
     if (!cur_hit)
     {

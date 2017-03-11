@@ -14,6 +14,7 @@
 #include <physics/collision.hpp>
 #include <array>
 #include <boost/fusion/algorithm.hpp>
+#include <queue>
 
 namespace rtr
 {
@@ -173,6 +174,36 @@ namespace physics
     void octree<Ts...>::resize(const glm::vec3 &center, const glm::vec3 &extent) {
         Expects(children.size() == 0);
         box = {center, extent};
+    }
+
+    template <class octree_type, class HandlerT>
+    void traverse_octree(const octree_type& otree, const physics::ray& ray, HandlerT fun)
+    {
+        std::queue<const octree_type*> q;
+
+        using physics::intersect;
+        auto put_octree = [&q, &ray](const octree_type* elem)
+        {
+            if (intersect(elem->bounding_box(), ray))
+            {
+                q.push(elem);
+            }
+        };
+
+        put_octree(&otree);
+
+        while (!q.empty())
+        {
+            const octree_type* oc = q.front();
+            q.pop();
+
+            for (auto& c : oc->get_children())
+            {
+                put_octree(&c);
+            }
+
+            oc->for_shapes(fun);
+        };
     }
 }
 }
