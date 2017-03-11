@@ -5,7 +5,7 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 set(CMAKE_CXX_STANDARD 14)
 
 set(DEBUG_FLAGS "-g -O0")
-set(RELEASE_FLAGS "-Ofast -march=native -fno-rtti -fno-exceptions")
+set(RELEASE_FLAGS "-Ofast -march=native -fno-rtti")
 
 if (CMAKE_BUILD_TYPE MATCHES "Release")
     message("Performance Build")
