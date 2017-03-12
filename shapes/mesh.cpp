@@ -91,7 +91,7 @@ namespace shapes
 
     mesh::~mesh() noexcept = default;
 
-    mesh::mesh(boost::container::vector<triangle> tris, bvector<long> indices, const material* m)
+    mesh::mesh(boost::container::vector<triangle> tris, bvector<int> indices, const material* m)
             : tris(std::move(tris)), face_indices(std::move(indices)), part(partition(this->tris)), mat(m)
     {
     }

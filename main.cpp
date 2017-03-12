@@ -35,13 +35,50 @@ static constexpr const char* build_types[] = {
     "Performance"
 };
 
-int main()
+#include <boost/program_options.hpp>
+
+int main(int ac, char** av)
 {
     auto logger = spdlog::stderr_logger_st("general");
     logger->info("rtr version {0}.{1}.{2}", RTR_VERSION_MAJOR, RTR_VERSION_MINOR, RTR_VERSION_PATCH);
     logger->info("Build Type: {0}", build_types[RTR_BUILD_TYPE]);
 
-    auto r = rtr::xml::read_scene("/home/fatih/Downloads/795_input_set_01/simple_shading.xml");
+    namespace po = boost::program_options;
+    po::options_description desc("Allowed options");
+    desc.add_options()
+            ("help", "produce help message")
+            ("stdin", "read scene from standard input")
+            ("scene-file,I", po::value<std::string>(), "read scene from file")
+            ;
+
+    po::variables_map vm;
+    po::store(po::parse_command_line(ac, av, desc), vm);
+    po::notify(vm);
+
+    if (vm.count("help")) {
+        std::cout << desc << "\n";
+        return 1;
+    }
+
+    std::string scene_file;
+    if (vm.count("stdin")) {
+        logger->info("Reading input from the standard input...");
+
+        std::cin >> std::noskipws;
+
+        std::istream_iterator<char> it(std::cin);
+        std::istream_iterator<char> end;
+        scene_file = std::string(it, end);
+    } else if (vm.count("scene-file")) {
+        auto f_name = vm["scene-file"].as<std::string>();
+        std::ifstream file(f_name);
+        file >> std::noskipws;
+        std::istream_iterator<char> it(file);
+        std::istream_iterator<char> end;
+        scene_file = std::string(it, end);
+    }
+
+    auto r = rtr::xml::read_scene(scene_file);
     r.first.finalize();
 
     auto writer = make_lambda_visitor<void>(

@@ -17,7 +17,7 @@ class mesh {
 
     using octree_type = physics::octree<triangle>;
 
-    boost::container::vector<long> face_indices;
+    boost::container::vector<int> face_indices;
 
     boost::container::vector<triangle> tris;
     boost::container::vector<glm::vec3> vert_normals;
@@ -40,7 +40,7 @@ public:
         data_t data;
     };
 
-    mesh(boost::container::vector<triangle> tris, boost::container::vector<long> indices, const material* mat);
+    mesh(boost::container::vector<triangle> tris, boost::container::vector<int> indices, const material* mat);
     mesh(const mesh&) = delete;
     mesh(mesh&&) noexcept;
     ~mesh() noexcept;
