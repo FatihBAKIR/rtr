@@ -49,7 +49,7 @@ namespace shapes
         }
 
         const auto center = (max + min) * 0.5f;
-        const auto extent = (max - min);
+        const auto extent = glm::clamp(max - min, 0.01f, 1.f/0.f);
 
         logger->info("Octree: [{0}, {1}]", center, extent);
 

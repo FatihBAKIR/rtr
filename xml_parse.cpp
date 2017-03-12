@@ -19,6 +19,7 @@
 #include <materials/normal_mat.hpp>
 #include <materials/material.hpp>
 #include <map>
+#include <stack>
 
 namespace xml = tinyxml2;
 namespace
@@ -77,6 +78,7 @@ rtr::shapes::mesh
 read_mesh(const xml::XMLElement* elem,
           const std::map<short, rtr::bvector<glm::vec3>>& vs,
           const std::map<short, rtr::bvector<int>>& indices,
+          const std::map<std::string, glm::mat4>& transformations,
           const std::unordered_map<long, rtr::material*>& mats)
 {
     auto mat_id = elem->FirstChildElement("Material")->Int64Text();
@@ -85,10 +87,32 @@ read_mesh(const xml::XMLElement* elem,
 
     rtr::bvector<rtr::shapes::triangle> faces;
 
+    std::stack<glm::mat4> transs;
+
+    if (elem->FirstChildElement("Transformations")->GetText())
+    {
+        std::istringstream iss(elem->FirstChildElement("Transformations")->GetText());
+        for (std::string s; iss >> s;)
+        {
+            transs.push(transformations.find(s)->second);
+        }
+    }
+
+    glm::mat4 full_trans(1.f);
+    while (!transs.empty())
+    {
+        full_trans = transs.top() * full_trans;
+        transs.pop();
+    }
+
     auto& verts = vs.find(v_id)->second;
     auto& inds = indices.find(i_id)->second;
     for (std::size_t i = 0; i < inds.size(); i += 3) {
-        faces.emplace_back(std::array<glm::vec3, 3>{verts[inds[i]], verts[inds[i + 1]], verts[inds[i + 2]]});
+        faces.emplace_back(std::array<glm::vec3, 3>{
+                full_trans * glm::vec4(verts[inds[i]], 1),
+                full_trans * glm::vec4(verts[inds[i + 1]], 1),
+                full_trans * glm::vec4(verts[inds[i + 2]], 1)
+        });
     }
 
     auto mat_it = mats.find(mat_id);
@@ -104,6 +128,7 @@ void read_objects(
         const xml::XMLElement* elem,
         const std::map<short, rtr::bvector<glm::vec3>>& verts,
         const std::map<short, rtr::bvector<int>>& indices,
+        const std::map<std::string, glm::mat4>& transformations,
         const std::unordered_map<long, rtr::material*>& mats,
         rtr::scene& sc
 )
@@ -113,7 +138,7 @@ void read_objects(
 
     for (auto s = elem->FirstChildElement(); s; s = s->NextSiblingElement()) {
         if (s->Name()==std::string("Mesh") || s->Name()==std::string("Triangle")) {
-            sc.insert(read_mesh(s, verts, indices, mats));
+            sc.insert(read_mesh(s, verts, indices, transformations, mats));
         }
         else if (s->Name()==std::string("Sphere")) {
             auto&& sphere = read_sphere(s, mats);
@@ -232,20 +257,20 @@ rtr::rt_mat read_rt_material(const xml::XMLElement* elem)
         if (elem->Name() == std::string("Translation"))
         {
             glm::vec3 t;
-            iss >> t.x >> t.y >> t.z;
+            iss >> t[0] >> t[1] >> t[2];
             return std::make_pair(std::string("t") + elem->Attribute("id"), rtr::transform::translate(t));
         }
         else if (elem->Name() == std::string("Scaling"))
         {
             glm::vec3 t;
-            iss >> t.x >> t.y >> t.z;
+            iss >> t[0] >> t[1] >> t[2];
             return std::make_pair(std::string("s") + elem->Attribute("id"), rtr::transform::scale(t));
         }
         else if (elem->Name() == std::string("Rotation"))
         {
             float amount;
             glm::vec3 t;
-            iss >> amount >> t.x >> t.y >> t.z;
+            iss >> amount >> t[0] >> t[1] >> t[2];
             return std::make_pair(std::string("r") + elem->Attribute("id"), rtr::transform::rotate(amount, t));
         }
 
@@ -300,7 +325,7 @@ namespace rtr {
                 mats.emplace(m->id, m);
             }
 
-            std::unordered_map<std::string, glm::mat4> transformations;
+            std::map<std::string, glm::mat4> transformations;
             auto transs = root->FirstChildElement("Transformations");
             for (auto t = transs->FirstChildElement(); t; t = t->NextSiblingElement())
             {
@@ -328,7 +353,7 @@ namespace rtr {
             iss >> center[0] >> center[1] >> center[2];
             iss = std::istringstream(root->Attribute("extent"));
             iss >> extent[0] >> extent[1] >> extent[2];
-            rtr::scene s{center, extent, std::move(mats)};
+            rtr::scene s{center, extent * 2.0f, std::move(mats)};
 
             s.m_shadow_epsilon = ray_epsilon;
             s.m_test_epsilon = intersect_epsilon;
@@ -337,7 +362,7 @@ namespace rtr {
             auto objs_root = root->FirstChildElement("Objects");
             auto lights = root->FirstChildElement("Lights");
 
-            read_objects(objs_root, v_buffers, i_buffers, s.materials(), s);
+            read_objects(objs_root, v_buffers, i_buffers, transformations, s.materials(), s);
             read_lights(lights, s);
 
             return std::make_pair(std::move(s), std::move(cams));

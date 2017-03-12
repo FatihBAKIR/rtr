@@ -49,7 +49,7 @@ public:
     using render_type = render_config::ldr_render;
 
     camera(const config::position_t & pos, const config::vector_t& up, const config::vector_t & gaze, const im_plane& p, const std::string& output) :
-            t{pos, up, -gaze, glm::cross(up, -gaze)}, plane{p}, m_output{output} {}
+            t{pos, glm::normalize(up), glm::normalize(-gaze), glm::cross(t.up, t.forward)}, plane{p}, m_output{output} {}
 
     typename render_config::render_traits<render_type>::image_type
     render(const scene& scene) const;

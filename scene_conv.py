@@ -124,10 +124,11 @@ for mesh in objects.iterfind("Mesh"):
     if not "shadingMode" in mesh.attrib:
         mesh.attrib["shadingMode"] = "flat"
 
+    mesh.attrib["instanced"] = str(False)
     new_elem.attrib = mesh.attrib
 
     if mesh.find("Transformations") is None:
-        etree.SubElement(new_elem, "Transformations")
+        etree.SubElement(new_elem, "Transformations").text = " "
     else:
         new_elem.append(copy.deepcopy(mesh.find("Transformations")))
 
@@ -149,6 +150,13 @@ for mesh_inst in objects.iterfind("MeshInstance"):
 for tri in objects.iterfind("Triangle"):
     faces = tri.find("Indices")
     new_elem = add_mesh(int(mesh.find("Material").text), faces)
+
+    new_elem.attrib["FromTri"] = str(True)
+    if tri.find("Transformations") is None:
+        etree.SubElement(new_elem, "Transformations").text = " "
+    else:
+        new_elem.append(copy.deepcopy(tri.find("Transformations")))
+
     new_objects.append(new_elem)
 
 converted_root.attrib["version"] = "1"
