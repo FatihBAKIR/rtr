@@ -7,12 +7,18 @@ set(CMAKE_CXX_STANDARD 14)
 set(DEBUG_FLAGS "-g -O0")
 set(RELEASE_FLAGS "-Ofast -march=native -fno-rtti")
 
+add_definitions(-DRTR_VERSION_MAJOR=0)
+add_definitions(-DRTR_VERSION_MINOR=2)
+add_definitions(-DRTR_VERSION_PATCH=0)
+
+add_definitions(-DGLM_ENABLE_EXPERIMENTAL)
+
 if (CMAKE_BUILD_TYPE MATCHES "Release")
-    message("Performance Build")
+    message(STATUS "Performance Build")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${RELEASE_FLAGS}")
     include(FindSSE)
-    if (HAVE_SSE2_EXTENSIONS)
-        message("Target has SSE4.2")
+    if (HAVE_SSE4_2_EXTENSIONS)
+        message(STATUS "Target has SSE4.2")
         add_definitions(-DGLM_FORCE_SSE42)
         add_definitions(-DGLM_FORCE_ALIGNED)
     endif()
@@ -45,20 +51,22 @@ set (PHYSICS_FILES
 
 set (TinyXML_FILES 3rd_party/tinyxml2/tinyxml2.cpp)
 
-set (COMMON_FILES ${LIGHT_FILES} ${SHAPE_FILES} ${TinyXML_FILES} ${PHYSICS_FILES}
+set (TRANSFORM_FILES transform/transform.cpp transform/transform.hpp)
+
+set (COMMON_FILES ${LIGHT_FILES} ${SHAPE_FILES} ${TinyXML_FILES} ${PHYSICS_FILES} ${TRANSFORM_FILES}
         camera.cpp camera.hpp
         transform.hpp
         scene.hpp scene.cpp
-        materials/material.hpp
+        materials/rt_mat.hpp
         rtr_fwd.hpp
         rtr_config.hpp
         vertex.hpp
         meta_list.hpp
         xml_parse.cpp xml_parse.hpp
         utility.hpp utility.cpp
-        materials/material.cpp
+        materials/rt_mat.cpp
         lights.hpp
-        shapes.hpp render_configs.hpp static_storage.cpp)
+        shapes.hpp render_configs.hpp static_storage.cpp materials/shading_ctx.hpp materials/material.hpp materials/normal_mat.cpp materials/normal_mat.hpp)
 
 set (GIL_HDR_FILES gil_extension/exr/detail/color_space_traits.cpp)
 

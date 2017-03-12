@@ -21,7 +21,8 @@ namespace shapes
 {
     physics::octree<triangle> partition(gsl::span<triangle> tris)
     {
-        auto logger = spdlog::stderr_logger_st("mesh data");
+        static int cnt = 0;
+        auto logger = spdlog::stderr_logger_st("mesh data " + std::to_string(++cnt));
         logger->info("Partitioning mesh into octree");
         logger->info("Mesh has {0} tris", tris.size());
 

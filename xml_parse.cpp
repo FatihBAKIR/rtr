@@ -13,9 +13,11 @@
 #include <iostream>
 #include <vector>
 
-#include <materials/material.hpp>
+#include <materials/rt_mat.hpp>
 #include <tinyxml2.h>
 #include <unordered_map>
+#include <materials/normal_mat.hpp>
+#include <materials/material.hpp>
 
 namespace xml = tinyxml2;
 namespace
@@ -50,12 +52,12 @@ rtr::camera read_camera(const xml::XMLElement* elem)
     iss = std::istringstream(get_text("ImageResolution"));
     iss >> width >> height;
 
-    rtr::im_plane plane{left, right, top, bottom, dist, width, height};
-    return {pos, up, gaze, plane};
+    rtr::im_plane plane{left, right, top, bottom, dist, width, height,};
+    return {pos, up, gaze, plane, elem->FirstChildElement("ImageName")->GetText()};
 }
 
 rtr::shapes::sphere read_sphere(const xml::XMLElement* elem, gsl::span<glm::vec3> verts,
-        const std::unordered_map<long, rtr::material>& mats)
+        const std::unordered_map<long, rtr::material*>& mats)
 {
     long mat_id;
     long vert_id;
@@ -66,11 +68,11 @@ rtr::shapes::sphere read_sphere(const xml::XMLElement* elem, gsl::span<glm::vec3
     mat_id = elem->FirstChildElement("Material")->Int64Text();
 
     auto mat_it = mats.find(mat_id);
-    return rtr::shapes::sphere(verts[vert_id], radius, &(*mat_it).second);
+    return rtr::shapes::sphere(verts[vert_id], radius, mat_it->second);
 }
 
 rtr::shapes::mesh
-read_mesh(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const std::unordered_map<long, rtr::material>& mats)
+read_mesh(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const std::unordered_map<long, rtr::material*>& mats)
 {
     long mat_id;
 
@@ -85,11 +87,12 @@ read_mesh(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const std::un
         face_indices.push_back(v[0]);
         face_indices.push_back(v[1]);
         face_indices.push_back(v[2]);
+
         faces.emplace_back(std::array<glm::vec3, 3>{verts[v[0]], verts[v[1]], verts[v[2]]});
     }
 
     auto mat_it = mats.find(mat_id);
-    rtr::shapes::mesh m {std::move(faces), std::move(face_indices), &(*mat_it).second};
+    rtr::shapes::mesh m {std::move(faces), std::move(face_indices), mat_it->second};
     if (elem->Attribute("shadingMode") && elem->Attribute("shadingMode") == std::string("smooth"))
     {
         m.smooth_normals();
@@ -98,7 +101,7 @@ read_mesh(const xml::XMLElement* elem, gsl::span<glm::vec3> verts, const std::un
 }
 
 void read_objects(const xml::XMLElement* elem, gsl::span<glm::vec3> verts,
-        const std::unordered_map<long, rtr::material>& mats, rtr::scene& sc)
+        const std::unordered_map<long, rtr::material*>& mats, rtr::scene& sc)
 {
     glm::vec3 scene_min, scene_max;
     float max_radius = 0;
@@ -158,13 +161,13 @@ void read_lights(const xml::XMLElement* elem, rtr::scene& sc)
     }
 }
 
-rtr::material read_material(const xml::XMLElement* elem)
+rtr::rt_mat read_rt_material(const xml::XMLElement* elem)
 {
     auto get_text = [&](const char* name) {
         return elem->FirstChildElement(name)->GetText();
     };
 
-    rtr::material m;
+    rtr::rt_mat m;
 
     m.id = elem->Int64Attribute("id");
 
@@ -181,6 +184,20 @@ rtr::material read_material(const xml::XMLElement* elem)
 
     return m;
 }
+    rtr::material* read_material(const xml::XMLElement* elem)
+    {
+        if (elem->Attribute("shader") == nullptr)
+        {
+            return new rtr::rt_mat(read_rt_material(elem));
+        }
+        else if (elem->Attribute("shader") == "normal_mat")
+        {
+            auto m = new rtr::normal_mat;
+            m->id = elem->Int64Attribute("id");
+            return m;
+        }
+    }
+
 }
 
 namespace rtr {
@@ -193,10 +210,11 @@ namespace rtr {
             doc.LoadFile(path.c_str());
 
             glm::vec3 bg;
-            float ray_epsilon, intersect_epsilon;
+            float ray_epsilon = 0.001, intersect_epsilon = 0.001;
 
             auto root = doc.FirstChildElement("Scene");
-            std::cout << root->FirstChildElement("BackgroundColor")->GetText() << '\n';
+            std::istringstream iss {root->FirstChildElement("BackgroundColor")->GetText()};
+            iss >> bg[0] >> bg[1] >> bg[2];
 
             if (root->FirstChildElement("ShadowRayEpsilon")) {
                 ray_epsilon = root->FirstChildElement("ShadowRayEpsilon")->FloatText(0);
@@ -211,14 +229,16 @@ namespace rtr {
                 cams.push_back(read_camera(c));
             }
 
-            std::unordered_map<long, rtr::material> mats;
+            std::unordered_map<long, rtr::material*> mats;
             auto materials = root->FirstChildElement("Materials");
             for (auto c = materials->FirstChildElement(); c; c = c->NextSiblingElement()) {
-                auto&& m = read_material(c);
-                mats.emplace(m.id, std::move(m));
+                auto m = read_material(c);
+                mats.emplace(m->id, m);
             }
 
-            glm::vec3 min = {10000, 10000, 10000}, max = {-10000, -10000, -10000};
+            constexpr auto inf = std::numeric_limits<float>::infinity();
+
+            glm::vec3 min = {inf, inf, inf}, max = {-inf, -inf, -inf};
 
             auto up_min_max = [&](const glm::vec3& vert) {
                 for (int j = 0; j<3; ++j) {
@@ -233,8 +253,9 @@ namespace rtr {
 
             std::vector<glm::vec3> vert_pos(1);
             auto vert_text = root->FirstChildElement("VertexData")->GetText();
-            std::istringstream iss(vert_text);
+            iss = std::istringstream(vert_text);
             for (glm::vec3 v; iss >> v[0] >> v[1] >> v[2];) {
+//                v = transform::translate(glm::vec3{0.1, 0, 0}) * transform::rotate(45, glm::vec3{0, 1, 0}) * transform::scale(glm::vec3{1.5, 1.5, 1.5}) * glm::vec4(v, 1);
                 vert_pos.push_back(v);
                 up_min_max(v);
             }
@@ -243,6 +264,10 @@ namespace rtr {
             glm::vec3 ext = max-min;
 
             rtr::scene s{center, ext, std::move(mats)};
+
+            s.m_shadow_epsilon = ray_epsilon;
+            s.m_test_epsilon = intersect_epsilon;
+            s.m_background = bg;
 
             auto objs_root = root->FirstChildElement("Objects");
             auto lights = root->FirstChildElement("Lights");

@@ -11,7 +11,7 @@
 #include <scene.hpp>
 #include <camera.hpp>
 
-#include <materials/material.hpp>
+#include <materials/rt_mat.hpp>
 
 #include <xml_parse.hpp>
 #include "rtr_config.hpp"
@@ -31,30 +31,33 @@
 #endif
 
 static constexpr const char* build_types[] = {
-        "Debug",
-        "Performance"
+    "Debug",
+    "Performance"
 };
 
 int main()
 {
     auto logger = spdlog::stderr_logger_st("general");
-    logger->info("rtr version {0}", "0.1.0");
+    logger->info("rtr version {0}.{1}.{2}", RTR_VERSION_MAJOR, RTR_VERSION_MINOR, RTR_VERSION_PATCH);
     logger->info("Build Type: {0}", build_types[RTR_BUILD_TYPE]);
 
-    auto r = rtr::xml::read_scene("/home/fatih/Downloads/795_input_set_01/bunny.xml");
+    auto r = rtr::xml::read_scene("/home/fatih/Downloads/795_input_set_01/simple_shading.xml");
     r.first.finalize();
-    auto ima = r.second[0].render(r.first);
 
     auto writer = make_lambda_visitor<void>(
-        [](boost::gil::rgb16f_image_t& img)
+        [](boost::gil::rgb16f_image_t& img, const std::string& output)
         {
-            boost::gil::exr_write_view("hai.exr", boost::gil::view(img));
+            boost::gil::exr_write_view(output.c_str(), boost::gil::view(img));
         },
-        [](boost::gil::rgb8_image_t& img)
+        [](boost::gil::rgb8_image_t& img, const std::string& output)
         {
-            boost::gil::png_write_view("hai.png", boost::gil::view(img));
+            boost::gil::png_write_view(output.c_str(), boost::gil::view(img));
         }
     );
 
-    writer(ima);
+    for (auto& cam : r.second)
+    {
+        auto ima = cam.render(r.first);
+        writer(ima, cam.get_output());
+    }
 }
