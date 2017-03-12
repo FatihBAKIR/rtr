@@ -7,6 +7,7 @@
 
 #include <glm/glm.hpp>
 #include <vector>
+#include <fstream>
 
 #include <scene.hpp>
 #include <camera.hpp>
@@ -16,15 +17,6 @@
 #include <xml_parse.hpp>
 #include "rtr_config.hpp"
 #include "utility.hpp"
-
-#if RTR_OPENEXR_SUPPORT
-    #include <gil_extension/exr/exr_io.hpp>
-#endif
-
-#if RTR_PNG_SUPPORT
-    #define int_p_NULL nullptr
-    #include <boost/gil/extension/io/png_io.hpp>
-#endif
 
 #if RTR_SPDLOG_SUPPORT
     #include <spdlog/spdlog.h>
@@ -82,14 +74,18 @@ int main(int ac, char** av)
     r.first.finalize();
 
     auto writer = make_lambda_visitor<void>(
+#if RTR_OPENEXR_SUPPORT
         [](boost::gil::rgb16f_image_t& img, const std::string& output)
         {
             boost::gil::exr_write_view(output.c_str(), boost::gil::view(img));
         },
+#endif
+#if RTR_PNG_SUPPORT
         [](boost::gil::rgb8_image_t& img, const std::string& output)
         {
             boost::gil::png_write_view(output.c_str(), boost::gil::view(img));
         }
+#endif
     );
 
     for (auto& cam : r.second)

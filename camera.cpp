@@ -7,18 +7,11 @@
 #include <scene.hpp>
 #include <rtr_config.hpp>
 
-#include <ImfRgba.h>
-#include <gil_extension/exr/exr_io.hpp>
 #include <materials/shading_ctx.hpp>
-
-template <class>
-struct print;
 
 #if RTR_SPDLOG_SUPPORT
 #include <spdlog/spdlog.h>
 #endif
-
-template<class> struct print;
 
 namespace rtr
 {

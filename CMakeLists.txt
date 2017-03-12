@@ -95,7 +95,7 @@ target_compile_definitions(ray PRIVATE)
 
 find_package(Boost REQUIRED COMPONENTS system thread filesystem program_options)
 find_package(PNG REQUIRED)
-find_package(OpenEXR REQUIRED)
+find_package(OpenEXR)
 find_package(Spdlog REQUIRED)
 
 target_include_directories(ray PUBLIC ${CMAKE_SOURCE_DIR})
