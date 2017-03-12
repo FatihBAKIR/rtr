@@ -24,8 +24,13 @@ else:
 for cam in root.iterfind("Camera"):
     converted_cameras.append(copy.deepcopy(cam))
 
-converted_root.append(copy.deepcopy(root.find("BackgroundColor"))) # lights need no modification
+converted_root.append(copy.deepcopy(root.find("BackgroundColor")))
 converted_root.append(copy.deepcopy(root.find("Lights"))) # lights need no modification
+
+if not (root.find("Transformations") is None):
+    converted_root.append(copy.deepcopy(root.find("Transformations"))) # lights need no modification
+else:
+    etree.SubElement(converted_root, "Transformations")
 
 converted_root.append(copy.deepcopy(root.find("Materials"))) # materials are almost the same
 for mat in converted_root.find("Materials").iterfind("Material"):
@@ -50,7 +55,6 @@ scn_center =[sum(x) / 2 for x in zip(scn_min, scn_max)]
 scn_extent =[max(0.01, y - x) for (x, y) in zip(scn_min, scn_max)]
 
 max_radius = 0
-
 
 def add_mesh_data(v_buffer, i_buffer):
     vbuf = etree.SubElement(buffers, "VertexBuffer")
@@ -112,11 +116,35 @@ def add_mesh(mat_id, faces):
     etree.SubElement(new_elem, "IndexBuffer").attrib["id"] = str(i_id)
     return new_elem
 
+meshes = {}
 
 for mesh in objects.iterfind("Mesh"):
     faces = mesh.find("Faces")
     new_elem = add_mesh(int(mesh.find("Material").text), faces)
+    if not "shadingMode" in mesh.attrib:
+        mesh.attrib["shadingMode"] = "flat"
+
+    new_elem.attrib = mesh.attrib
+
+    if mesh.find("Transformations") is None:
+        etree.SubElement(new_elem, "Transformations")
+    else:
+        new_elem.append(copy.deepcopy(mesh.find("Transformations")))
+
+    meshes[mesh.attrib["id"]] = new_elem
+
     new_objects.append(new_elem)
+
+for mesh_inst in objects.iterfind("MeshInstance"):
+    base_id = mesh_inst.attrib["baseMeshId"]
+    base_mesh = copy.deepcopy(meshes[base_id])
+
+    new_transforms = mesh_inst.find("Transformations").text if not mesh_inst.find("Transformations") is None else ""
+    base_mesh.find("Transformations").text = new_transforms + " " + base_mesh.find("Transformations").text
+
+    del base_mesh.attrib["id"]
+    base_mesh.attrib["instanced"] = str(True)
+    new_objects.append(base_mesh)
 
 for tri in objects.iterfind("Triangle"):
     faces = tri.find("Indices")

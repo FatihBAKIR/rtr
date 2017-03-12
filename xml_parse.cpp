@@ -224,7 +224,49 @@ rtr::rt_mat read_rt_material(const xml::XMLElement* elem)
         }
         return vert_pos;
     }
+
+    auto read_transformation(const xml::XMLElement* elem)
+    {
+        std::istringstream iss(elem->GetText());
+
+        if (elem->Name() == std::string("Translation"))
+        {
+            glm::vec3 t;
+            iss >> t.x >> t.y >> t.z;
+            return std::make_pair(std::string("t") + elem->Attribute("id"), rtr::transform::translate(t));
+        }
+        else if (elem->Name() == std::string("Scaling"))
+        {
+            glm::vec3 t;
+            iss >> t.x >> t.y >> t.z;
+            return std::make_pair(std::string("s") + elem->Attribute("id"), rtr::transform::scale(t));
+        }
+        else if (elem->Name() == std::string("Rotation"))
+        {
+            float amount;
+            glm::vec3 t;
+            iss >> amount >> t.x >> t.y >> t.z;
+            return std::make_pair(std::string("r") + elem->Attribute("id"), rtr::transform::rotate(amount, t));
+        }
+
+        throw std::runtime_error("can't happen");
+    }
 }
+
+struct parser
+{
+    glm::vec3 bg;
+    float ray_epsilon, intersect_epsilon;
+
+    std::vector<rtr::camera> cams;
+    std::unordered_map<long, rtr::material*> mats;
+    std::unordered_map<std::string, glm::mat4> transformations;
+
+    std::map<short, rtr::bvector<glm::vec3>> v_buffers;
+    std::map<short, rtr::bvector<int>> i_buffers;
+
+    glm::vec3 center, extent;
+};
 
 namespace rtr {
     namespace xml {
@@ -256,6 +298,13 @@ namespace rtr {
             for (auto c = materials->FirstChildElement(); c; c = c->NextSiblingElement()) {
                 auto m = read_material(c);
                 mats.emplace(m->id, m);
+            }
+
+            std::unordered_map<std::string, glm::mat4> transformations;
+            auto transs = root->FirstChildElement("Transformations");
+            for (auto t = transs->FirstChildElement(); t; t = t->NextSiblingElement())
+            {
+                transformations.insert(read_transformation(t));
             }
 
             std::map<short, bvector<glm::vec3>> v_buffers;
