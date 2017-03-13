@@ -8,8 +8,10 @@ namespace rtr {
     template<class T>
     using bvector = boost::container::vector<T>;
 
-    struct transform;
-    struct material;
+    struct shading_ctx;
+
+    class material;
+    class rt_mat;
 
     struct vertex;
 

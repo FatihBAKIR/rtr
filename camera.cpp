@@ -7,11 +7,7 @@
 #include <scene.hpp>
 #include <rtr_config.hpp>
 
-#include <ImfRgba.h>
-#include <gil_extension/exr/exr_io.hpp>
-
-template <class>
-struct print;
+#include <materials/shading_ctx.hpp>
 
 #if RTR_SPDLOG_SUPPORT
 #include <spdlog/spdlog.h>
@@ -22,9 +18,11 @@ namespace rtr
     typename render_config::render_traits<camera::render_type>::image_type
     camera::render(const scene& scene) const
     {
+        static auto id = 0;
 #if RTR_SPDLOG_SUPPORT
-        auto logger = spdlog::stderr_logger_st("camera");
+        auto logger = spdlog::stderr_logger_st("camera " + std::to_string(++id));
         logger->info("Rendering with configuration \"{0}\"", render_type::name);
+        logger->info("Output file: {0}", m_output);
 #endif
 
         using namespace physics;
@@ -35,6 +33,7 @@ namespace rtr
 
         using im_type = typename rtr::render_config::render_traits<render_type>::image_type;
         using pix_type = im_type::value_type;
+        using c_type = boost::gil::channel_type<pix_type>::type;
 
         im_type img(plane.width, plane.height);
         auto v = view(img);
@@ -51,8 +50,13 @@ namespace rtr
                 auto res = scene.ray_cast(r);
                 if (res)
                 {
-                    const auto& c = render_type::process(res->mat->calculate_color(scene, -r.dir, res->position, res->normal));
-                    v(col, row) = pix_type(half(c[0]), half(c[1]), half(c[2]));
+                    const auto& c = render_type::process(res->mat->shade(shading_ctx{scene, -r.dir, *res}));
+                    v(col, row) = pix_type(c_type(c[0]), c_type(c[1]), c_type(c[2]));
+                }
+                else
+                {
+                    const auto& c = render_type::process(scene.m_background);
+                    v(col, row) = pix_type(c_type(c[0]), c_type(c[1]), c_type(c[2]));
                 }
 
                 row_pos += one_right;

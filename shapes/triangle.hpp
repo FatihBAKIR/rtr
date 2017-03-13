@@ -11,6 +11,7 @@
 #include <gsl/span>
 #include <physics/collision.hpp>
 #include <glm/glm.hpp>
+#include <transform/transform.hpp>
 
 namespace rtr
 {
@@ -48,6 +49,7 @@ namespace shapes
 
         triangle(const std::array<glm::vec3, 3>& vs) : vertices(vs)
         {
+
             m_normal = glm::normalize(glm::cross(verts.b - verts.a, verts.c - verts.a));
         }
 

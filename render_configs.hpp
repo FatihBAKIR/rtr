@@ -6,6 +6,12 @@
 
 #if RTR_OPENEXR_SUPPORT
     #include <gil_extension/exr/half/typedefs.hpp>
+#include <gil_extension/exr/exr_io.hpp>
+#endif
+
+#if RTR_PNG_SUPPORT
+#define int_p_NULL nullptr
+    #include <boost/gil/extension/io/png_io.hpp>
 #endif
 
 #include <glm/glm.hpp>

@@ -9,7 +9,7 @@
 #include <boost/optional.hpp>
 #include <physics/octree.hpp>
 #include <unordered_map>
-#include <materials/material.hpp>
+#include <materials/rt_mat.hpp>
 
 namespace rtr
 {
@@ -30,11 +30,15 @@ class scene
     light_vector_tuple lights;
     std::unique_ptr<lights::ambient_light> ambient;
 
-    std::unordered_map<long, material> mats;
+    std::unordered_map<long, material*> mats;
 
 public:
 
-    scene(const glm::vec3& center, const glm::vec3& extent, std::unordered_map<long, material> mats);
+    glm::vec3 m_background;
+    float m_shadow_epsilon;
+    float m_test_epsilon;
+
+    scene(const glm::vec3& center, const glm::vec3& extent, std::unordered_map<long, material*> mats);
     scene(const scene&) = delete;
     scene(scene&&) = default;
     ~scene();

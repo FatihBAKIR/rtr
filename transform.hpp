@@ -8,7 +8,7 @@
 
 namespace rtr
 {
-struct transform
+struct transformation
 {
     const glm::vec3 position;
     const glm::vec3 up;

@@ -34,28 +34,29 @@ struct im_plane
         pix_h = (top - bottom) / height;
     }
 
-    glm::vec3 get_top_left(const transform& of) const {
+    glm::vec3 get_top_left(const transformation& of) const {
         return of.position - of.forward * dist + of.right * left + of.up * top;
     }
 };
 
 class camera
 {
-    const transform t;
+    const transformation t;
     im_plane plane;
+    std::string m_output;
 
 public:
     using render_type = render_config::ldr_render;
 
-    camera(const config::position_t & pos, const config::vector_t& up, const config::vector_t & gaze, const im_plane& p) :
-            t{pos, up, -gaze, glm::cross(up, -gaze)}, plane{p} {}
+    camera(const config::position_t & pos, const config::vector_t& up, const config::vector_t & gaze, const im_plane& p, const std::string& output) :
+            t{pos, glm::normalize(up), glm::normalize(-gaze), glm::cross(t.up, t.forward)}, plane{p}, m_output{output} {}
 
     typename render_config::render_traits<render_type>::image_type
     render(const scene& scene) const;
 
-    const transform& get_transform() const
+    const std::string& get_output() const
     {
-        return t;
+        return m_output;
     }
 };
 }

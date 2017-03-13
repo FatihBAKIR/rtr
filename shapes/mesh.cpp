@@ -22,7 +22,8 @@ namespace shapes
 {
     physics::octree<triangle> partition(gsl::span<triangle> tris)
     {
-        auto logger = spdlog::stderr_logger_st("mesh data");
+        static int cnt = 0;
+        auto logger = spdlog::stderr_logger_st("mesh data " + std::to_string(++cnt));
         logger->info("Partitioning mesh into octree");
         logger->info("Mesh has {0} tris", tris.size());
 
@@ -49,7 +50,7 @@ namespace shapes
         }
 
         const auto center = (max + min) * 0.5f;
-        const auto extent = (max - min);
+        const auto extent = glm::clamp(max - min, 0.01f, 1.f/0.f);
 
         logger->info("Octree: [{0}, {1}]", center, extent);
 
@@ -91,7 +92,7 @@ namespace shapes
 
     mesh::~mesh() noexcept = default;
 
-    mesh::mesh(boost::container::vector<triangle> tris, bvector<long> indices, const material* m)
+    mesh::mesh(boost::container::vector<triangle> tris, bvector<int> indices, const material* m)
             : tris(std::move(tris)), face_indices(std::move(indices)), part(partition(this->tris)), mat(m)
     {
     }

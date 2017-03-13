@@ -4,7 +4,6 @@
 
 #include <physics/ray.hpp>
 #include <glm/glm.hpp>
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/norm.hpp>
 #include "sphere.hpp"
 
