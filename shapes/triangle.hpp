@@ -64,6 +64,8 @@ namespace shapes
         {
             return m_normal;
         }
+
+        float get_area() const;
     };
 
     physics::collide_result intersect(const physics::aabb&, const triangle&);

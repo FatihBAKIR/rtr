@@ -57,8 +57,35 @@ rtr::camera read_camera(const xml::XMLElement* elem)
     rtr::im_plane plane{left, right, top, bottom, dist, width, height,};
     return {pos, up, gaze, plane, elem->FirstChildElement("ImageName")->GetText()};
 }
+glm::mat4 parse_transform(const xml::XMLElement* elem, const std::map<std::string, glm::mat4>& ts)
+{
+    std::queue<glm::mat4> transs;
+    glm::mat4 full_trans(1.f);
 
-rtr::shapes::sphere read_sphere(const xml::XMLElement* elem, const std::unordered_map<long, rtr::material*>& mats)
+    if (elem->GetText())
+    {
+        std::istringstream iss(elem->GetText());
+        for (std::string s; iss >> s;)
+        {
+            transs.push(ts.find(s)->second);
+        }
+    }
+
+    while (!transs.empty())
+    {
+        full_trans = transs.front() * full_trans;
+        transs.pop();
+    }
+
+    return full_trans;
+}
+
+
+rtr::shapes::sphere
+read_sphere(
+        const xml::XMLElement* elem,
+        const std::unordered_map<long, rtr::material*>& mats,
+        const std::map<std::string, glm::mat4>& transformations)
 {
     long mat_id;
     float radius;
@@ -70,9 +97,12 @@ rtr::shapes::sphere read_sphere(const xml::XMLElement* elem, const std::unordere
 
     mat_id = elem->FirstChildElement("Material")->Int64Text();
 
+    glm::mat4 full_trans = parse_transform(elem->FirstChildElement("Transformations"), transformations);
+
     auto mat_it = mats.find(mat_id);
-    return rtr::shapes::sphere(center, radius, mat_it->second);
+    return rtr::shapes::sphere(center, radius, mat_it->second, full_trans);
 }
+
 
 rtr::shapes::mesh
 read_mesh(const xml::XMLElement* elem,
@@ -87,23 +117,7 @@ read_mesh(const xml::XMLElement* elem,
 
     rtr::bvector<rtr::shapes::triangle> faces;
 
-    std::stack<glm::mat4> transs;
-
-    if (elem->FirstChildElement("Transformations")->GetText())
-    {
-        std::istringstream iss(elem->FirstChildElement("Transformations")->GetText());
-        for (std::string s; iss >> s;)
-        {
-            transs.push(transformations.find(s)->second);
-        }
-    }
-
-    glm::mat4 full_trans(1.f);
-    while (!transs.empty())
-    {
-        full_trans = transs.top() * full_trans;
-        transs.pop();
-    }
+    glm::mat4 full_trans = parse_transform(elem->FirstChildElement("Transformations"), transformations);
 
     auto& verts = vs.find(v_id)->second;
     auto& inds = indices.find(i_id)->second;
@@ -111,7 +125,7 @@ read_mesh(const xml::XMLElement* elem,
         faces.emplace_back(std::array<glm::vec3, 3>{
                 full_trans * glm::vec4(verts[inds[i]], 1),
                 full_trans * glm::vec4(verts[inds[i + 1]], 1),
-                full_trans * glm::vec4(verts[inds[i + 2]], 1)
+                full_trans * glm::vec4(verts[inds[i + 2]], 1),
         });
     }
 
@@ -141,7 +155,7 @@ void read_objects(
             sc.insert(read_mesh(s, verts, indices, transformations, mats));
         }
         else if (s->Name()==std::string("Sphere")) {
-            auto&& sphere = read_sphere(s, mats);
+            auto&& sphere = read_sphere(s, mats, transformations);
             if (sphere.get_radius()>max_radius) {
                 auto growth = sphere.get_radius()-max_radius;
                 max_radius = sphere.get_radius();
@@ -226,6 +240,7 @@ rtr::rt_mat read_rt_material(const xml::XMLElement* elem)
             m->id = elem->Int64Attribute("id");
             return m;
         }
+        throw std::runtime_error("shader not supported");
     }
 
     rtr::bvector<glm::vec3> parse_vector_buffer(const xml::XMLElement* elem)

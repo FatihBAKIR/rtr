@@ -60,7 +60,7 @@ namespace shapes
         {
             auto oc = partition.insert(tri);
 
-            if (oc->get_size() > 1 && oc->get_children().size() == 0)
+            if (oc->get_size() > 6 && oc->get_children().size() == 0)
             {
                 oc->add_level();
             }
@@ -150,9 +150,9 @@ namespace shapes
             normals[elem.first] = {};
             for (auto& tri : elem.second)
             {
-                normals[elem.first] += tri->get_normal();
+                normals[elem.first] += tri->get_normal() * tri->get_area();
             }
-            normals[elem.first] /= (float)elem.second.size();
+            normals[elem.first] = glm::normalize(normals[elem.first]);
         }
 
         vert_normals.clear();

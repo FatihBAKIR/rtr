@@ -41,6 +41,11 @@ namespace rtr {
 
             return {param_res_t{param, { alpha, beta, gamma }}};
         }
+
+        float triangle::get_area() const
+        {
+            return glm::length(glm::cross(verts.b - verts.a, verts.c - verts.a)) * 0.5f;
+        }
     }
 }
 

@@ -157,7 +157,7 @@ namespace physics
             return nullptr;
         }
 
-        return ch;
+        return ch->where(shape);
     }
 
     template <class... Ts>

@@ -2,6 +2,8 @@
 // Created by fatih on 12.03.2017.
 //
 
+#pragma once
+
 #include <materials/material.hpp>
 
 namespace rtr

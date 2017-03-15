@@ -7,6 +7,7 @@
 #include <rtr_fwd.hpp>
 #include <transform.hpp>
 #include <boost/optional.hpp>
+#include <glm/mat4x4.hpp>
 
 namespace rtr
 {
@@ -20,22 +21,33 @@ class sphere
 
     const material* mat;
 
+    glm::mat4 inv_transform;
+    glm::mat4 transform;
+
 public:
+
+    struct data_t
+    {
+        glm::vec3 pos;
+        glm::vec3 normal;
+    };
 
     struct param_res_t
     {
         float parameter;
-        const void* data;
+        data_t data;
     };
 
-    sphere(const glm::vec3& p, float r, const material* m) : pos(p), radius(r), r2(r * r), mat(m)
+    sphere(const glm::vec3& p, float r, const material* m, const glm::mat4& trans) : pos(p), radius(r), r2(r * r), mat(m),
+                                                                                   inv_transform(glm::inverse(trans)),
+                                                                                     transform(trans)
     {}
 
     const glm::vec3& get_center() const { return pos; }
     float get_radius() const { return radius; }
 
     boost::optional<param_res_t> get_parameter(const physics::ray& ray) const;
-    physics::ray_hit intersect(const physics::ray& ray, float parameter, const void* data) const;
+    physics::ray_hit intersect(const physics::ray& ray, float parameter, const data_t& data) const;
 };
 }
 }

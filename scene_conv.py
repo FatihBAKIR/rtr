@@ -34,7 +34,8 @@ else:
 
 converted_root.append(copy.deepcopy(root.find("Materials"))) # materials are almost the same
 for mat in converted_root.find("Materials").iterfind("Material"):
-    mat.attrib["shader"] = "ceng795" # just set the shaders
+    if not "shader" in mat.attrib:
+        mat.attrib["shader"] = "ceng795" # just set the shaders
 
 def group(lst, n):
     return zip(*[lst[i::n] for i in range(n)])
@@ -86,6 +87,8 @@ for sphere in objects.iterfind("Sphere"):
     new_elem = copy.deepcopy(sphere)
     max_radius = max(max_radius, float(new_elem.find("Radius").text))
     new_elem.find("Center").text = " ".join(map(str, vertices[int(sphere.find("Center").text) - 1]))
+    if (new_elem.find("Transformations") is None):
+        etree.SubElement(new_elem, "Transformations")
     new_objects.append(new_elem)
 
 scn_extent = [sum(x) for x in zip(scn_extent, (max_radius, max_radius, max_radius))]

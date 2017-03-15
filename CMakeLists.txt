@@ -5,11 +5,12 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 set(CMAKE_CXX_STANDARD 14)
 
 set(DEBUG_FLAGS "-g -O0")
-set(RELEASE_FLAGS "-Ofast -march=native -fno-rtti")
+set(RELEASE_FLAGS "-Ofast -march=native -fno-rtti -fno-stack-protector")
 
 add_definitions(-DRTR_VERSION_MAJOR=0)
 add_definitions(-DRTR_VERSION_MINOR=2)
 add_definitions(-DRTR_VERSION_PATCH=0)
+add_definitions(-Dint_p_NULL=nullptr)
 
 add_definitions(-DGLM_ENABLE_EXPERIMENTAL)
 
@@ -88,6 +89,7 @@ elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wno-long-long -pedantic -Wno-missing-braces")
 endif()
 
+include(cotire)
 add_executable(ray ${SOURCE_FILES})
 add_executable(tests ${TEST_FILES})
 
@@ -132,6 +134,8 @@ if (spdlog_FOUND)
 
     target_include_directories(ray PUBLIC ${SPDLOG_INCLUDE_DIR})
 endif()
+
+cotire(ray)
 
 target_include_directories(tests PUBLIC ${CMAKE_SOURCE_DIR})
 
