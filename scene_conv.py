@@ -144,7 +144,7 @@ for mesh_inst in objects.iterfind("MeshInstance"):
     base_mesh = copy.deepcopy(meshes[base_id])
 
     new_transforms = mesh_inst.find("Transformations").text if not mesh_inst.find("Transformations") is None else ""
-    base_mesh.find("Transformations").text = new_transforms + " " + base_mesh.find("Transformations").text
+    base_mesh.find("Transformations").text = base_mesh.find("Transformations").text + " " + new_transforms
 
     del base_mesh.attrib["id"]
     base_mesh.attrib["instanced"] = str(True)
