@@ -95,10 +95,13 @@ add_executable(tests ${TEST_FILES})
 
 target_compile_definitions(ray PRIVATE)
 
+set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost REQUIRED COMPONENTS system thread filesystem program_options)
 find_package(PNG REQUIRED)
 find_package(OpenEXR)
 find_package(Spdlog REQUIRED)
+
+find_package(Curses REQUIRED)
 
 target_include_directories(ray PUBLIC ${CMAKE_SOURCE_DIR})
 
@@ -133,6 +136,13 @@ if (spdlog_FOUND)
     target_compile_definitions(ray PRIVATE RTR_SPDLOG_SUPPORT=1)
 
     target_include_directories(ray PUBLIC ${SPDLOG_INCLUDE_DIR})
+endif()
+
+if (CURSES_FOUND)
+    message(STATUS "Found Curses, Building Console UI")
+    target_compile_definitions(ray PRIVATE RTR_CURSES_SUPPORT=1)
+    target_include_directories(ray PUBLIC ${CURSES_INCLUDE_DIRS})
+    target_link_libraries(ray ${CURSES_LIBRARIES})
 endif()
 
 cotire(ray)
