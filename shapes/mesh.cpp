@@ -14,7 +14,9 @@
 #include <shapes.hpp>
 
 #include <spdlog/spdlog.h>
+#ifndef __linux__
 #include <spdlog/fmt/ostr.h>
+#endif
 
 namespace rtr
 {
