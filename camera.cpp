@@ -128,6 +128,7 @@ namespace rtr {
             {
                 row++;
                 pix_pos += one_right;
+                return *this;
             }
 
             for_index& operator*()
@@ -139,7 +140,7 @@ namespace rtr {
         for_index beg_i;
         beg_i.row = 0;
         beg_i.pix_pos = plane.get_top_left(t) + 0.5f * one_right + 0.5f * one_down;
-        beg_i.one_right = one_right;
+        beg_i.one_right = one_down;
 
         for_index end_i;
         end_i.row = plane.height;
