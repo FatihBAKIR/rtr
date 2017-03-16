@@ -16,6 +16,8 @@
 #if RTR_TBB_SUPPORT
 #include <tbb/task_scheduler_init.h>
 #include <tbb/task_group.h>
+#include <tbb/parallel_do.h>
+#include <tbb/parallel_for.h>
 #endif
 
 namespace rtr {
@@ -103,21 +105,49 @@ namespace rtr {
 
 
 #if RTR_TBB_SUPPORT && !RTR_NO_THREADING
-        tbb_threading_policy render_policy;
         logger->info("Using TBB policy with {} threads", tbb::task_scheduler_init::default_num_threads());
-#else
-        single_thread_policy render_policy;
 #endif
 
-        glm::vec3 pix_pos = plane.get_top_left(t) + 0.5f * one_right + 0.5f * one_down;
-        for (int row = 0; row < plane.height; ++row) {
-            render_policy.run_task([pix_pos, this, row, &one_right, &scene, &v]{
-                render_scanline(*this, pix_pos, row, one_right, scene, v);
-            });
-            pix_pos += one_down;
-        }
+        struct for_index : public std::iterator<std::forward_iterator_tag, for_index>
+        {
+            long row;
+            glm::vec3 pix_pos;
+            glm::vec3 one_right;
 
-        render_policy.converge();
+            bool operator<(const for_index& rhs) const
+            {
+                return row < rhs.row;
+            }
+
+            bool operator==(const for_index& rhs) const
+            {
+                return row == rhs.row;
+            }
+
+            for_index& operator++()
+            {
+                row++;
+                pix_pos += one_right;
+            }
+
+            for_index& operator*()
+            {
+                return *this;
+            }
+        };
+
+        for_index beg_i;
+        beg_i.row = 0;
+        beg_i.pix_pos = plane.get_top_left(t) + 0.5f * one_right + 0.5f * one_down;
+        beg_i.one_right = one_right;
+
+        for_index end_i;
+        end_i.row = plane.height;
+
+        tbb::parallel_do(beg_i, end_i,[&](const for_index& row)
+        {
+            render_scanline(*this, row.pix_pos, row.row, one_right, scene, v);
+        });
 
         auto end = std::chrono::high_resolution_clock::now();
         auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
