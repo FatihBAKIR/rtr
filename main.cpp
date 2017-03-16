@@ -22,18 +22,14 @@
     #include <spdlog/spdlog.h>
 #endif
 
-static constexpr const char* build_types[] = {
-    "Debug",
-    "Performance"
-};
-
 #include <boost/program_options.hpp>
 
 int main(int ac, char** av)
 {
     auto logger = spdlog::stderr_logger_st("general");
-    logger->info("rtr version {0}.{1}.{2}", RTR_VERSION_MAJOR, RTR_VERSION_MINOR, RTR_VERSION_PATCH);
-    logger->info("Build Type: {0}", build_types[RTR_BUILD_TYPE]);
+    logger->info("rtr version {0}", rtr::config::version_str);
+    logger->info("Build Type: {0}", rtr::config::build_type);
+    logger->info("rtr threading support: {0}", rtr::config::thread_support);
 
     namespace po = boost::program_options;
     po::options_description desc("Allowed options");

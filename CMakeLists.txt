@@ -11,6 +11,7 @@ add_definitions(-DRTR_VERSION_MAJOR=0)
 add_definitions(-DRTR_VERSION_MINOR=2)
 add_definitions(-DRTR_VERSION_PATCH=0)
 add_definitions(-Dint_p_NULL=nullptr)
+add_definitions(-DTBB_USE_EXCEPTIONS=0)
 
 add_definitions(-DGLM_ENABLE_EXPERIMENTAL)
 
@@ -100,8 +101,10 @@ find_package(Boost REQUIRED COMPONENTS system thread filesystem program_options)
 find_package(PNG REQUIRED)
 find_package(OpenEXR)
 find_package(Spdlog REQUIRED)
+find_package(Curses)
 
-find_package(Curses REQUIRED)
+set(TBB_ROOT_DIR "/home/fatih/tbb")
+find_package(TBB REQUIRED)
 
 target_include_directories(ray PUBLIC ${CMAKE_SOURCE_DIR})
 
@@ -143,6 +146,13 @@ if (CURSES_FOUND)
     target_compile_definitions(ray PRIVATE RTR_CURSES_SUPPORT=1)
     target_include_directories(ray PUBLIC ${CURSES_INCLUDE_DIRS})
     target_link_libraries(ray ${CURSES_LIBRARIES})
+endif()
+
+if (TBB_FOUND)
+    message(STATUS "Found Threading Building Blocks")
+    target_compile_definitions(ray PRIVATE RTR_TBB_SUPPORT=1)
+    target_include_directories(ray PUBLIC ${TBB_INCLUDE_DIRS})
+    target_link_libraries(ray tbb)
 endif()
 
 cotire(ray)

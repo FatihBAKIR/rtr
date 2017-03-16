@@ -41,14 +41,10 @@ struct im_plane
 
 class camera
 {
-    const transformation t;
-    im_plane plane;
-    std::string m_output;
-
 public:
     using render_type = render_config::ldr_render;
 
-    camera(const config::position_t & pos, const config::vector_t& up, const config::vector_t & gaze, const im_plane& p, const std::string& output) :
+    camera(const glm::vec3& pos, const glm::vec3& up, const glm::vec3 & gaze, const im_plane& p, const std::string& output) :
             t{pos, glm::normalize(up), glm::normalize(-gaze), glm::cross(t.up, t.forward)}, plane{p}, m_output{output} {}
 
     typename render_config::render_traits<render_type>::image_type
@@ -58,5 +54,12 @@ public:
     {
         return m_output;
     }
+private:
+    const transformation t;
+    im_plane plane;
+    std::string m_output;
+
+    friend void render_scanline(const camera& cam, glm::vec3 row_pos, int row, const glm::vec3&, const scene& scn,
+                                typename render_config::render_traits<render_type>::image_type::view_t &v);
 };
 }
