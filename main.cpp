@@ -40,7 +40,7 @@ int main(int ac, char** av)
     desc.add_options()
             ("help", "produce help message")
             ("stdin", "read scene from standard input")
-            ("scene-file,I", po::value<std::string>(), "read scene from file")
+            ("file", po::value<std::string>()->default_value(""), "read scene from file")
             ;
 
     po::variables_map vm;
@@ -61,8 +61,9 @@ int main(int ac, char** av)
         std::istream_iterator<char> it(std::cin);
         std::istream_iterator<char> end;
         scene_file = std::string(it, end);
-    } else if (vm.count("scene-file")) {
-        auto f_name = vm["scene-file"].as<std::string>();
+    } else if (vm.count("file")) {
+        auto f_name = vm["file"].as<std::string>();
+        logger->info("Reading input from file {0}", f_name);
         std::ifstream file(f_name);
         file >> std::noskipws;
         std::istream_iterator<char> it(file);

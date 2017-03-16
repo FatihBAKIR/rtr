@@ -10,7 +10,6 @@
 #endif
 
 #if RTR_PNG_SUPPORT
-#define int_p_NULL nullptr
     #include <boost/gil/extension/io/png_io.hpp>
 #endif
 
