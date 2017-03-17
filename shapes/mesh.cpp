@@ -62,11 +62,13 @@ namespace shapes
         {
             auto oc = partition.insert(tri);
 
-            if (oc->get_size() > 6 && oc->get_children().size() == 0)
+            if (oc->get_size() > 2 && oc->get_children().size() == 0)
             {
                 oc->add_level();
             }
         }
+
+        partition.optimize();
 
         auto end = std::chrono::high_resolution_clock::now();
 

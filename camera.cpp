@@ -22,35 +22,34 @@
 
 namespace rtr {
 
-#if RTR_TBB_SUPPORT
-    struct tbb_threading_policy
+    struct row_iterator
+            : public std::iterator<std::forward_iterator_tag, row_iterator>
     {
-        tbb::task_scheduler_init init;
-        tbb::task_group g;
-
-        tbb_threading_policy() : init() {}
-
-        template <class T>
-        void run_task(const T& task)
+        bool operator==(const row_iterator& rhs) const
         {
-            g.run(task);
+            return row == rhs.row;
         }
 
-        void converge()
+        bool operator!=(const row_iterator& rhs) const
         {
-            g.wait();
+            return row != rhs.row;
         }
-    };
-#endif
 
-    struct single_thread_policy
-    {
-        template <class T>
-        void run_task(const T& task)
+        row_iterator& operator++()
         {
-            task();
+            row++;
+            pix_pos += one_right;
+            return *this;
         }
-        void converge(){}
+
+        row_iterator& operator*()
+        {
+            return *this;
+        }
+
+        long row;
+        glm::vec3 pix_pos;
+        glm::vec3 one_right;
     };
 
     void render_scanline(const camera &cam, glm::vec3 row_pos, int row, const glm::vec3& one_right, const scene &scene,
@@ -108,47 +107,24 @@ namespace rtr {
         logger->info("Using TBB policy with {} threads", tbb::task_scheduler_init::default_num_threads());
 #endif
 
-        struct for_index : public std::iterator<std::forward_iterator_tag, for_index>
-        {
-            long row;
-            glm::vec3 pix_pos;
-            glm::vec3 one_right;
-
-            bool operator<(const for_index& rhs) const
-            {
-                return row < rhs.row;
-            }
-
-            bool operator==(const for_index& rhs) const
-            {
-                return row == rhs.row;
-            }
-
-            for_index& operator++()
-            {
-                row++;
-                pix_pos += one_right;
-                return *this;
-            }
-
-            for_index& operator*()
-            {
-                return *this;
-            }
-        };
-
-        for_index beg_i;
+        row_iterator beg_i;
         beg_i.row = 0;
         beg_i.pix_pos = plane.get_top_left(t) + 0.5f * one_right + 0.5f * one_down;
         beg_i.one_right = one_down;
 
-        for_index end_i;
+        row_iterator end_i;
         end_i.row = plane.height;
 
-        tbb::parallel_do(beg_i, end_i,[&](const for_index& row)
+        auto render_row = [&](const row_iterator& row)
         {
             render_scanline(*this, row.pix_pos, row.row, one_right, scene, v);
-        });
+        };
+
+#if RTR_TBB_SUPPORT && !RTR_NO_THREADING
+        tbb::parallel_do(beg_i, end_i, render_row);
+#else
+        std::for_each(beg_i, end_i, render_row);
+#endif
 
         auto end = std::chrono::high_resolution_clock::now();
         auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
