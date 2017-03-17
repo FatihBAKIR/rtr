@@ -38,6 +38,7 @@ namespace physics
         vector_tuple ptr_vectors;
 
         unsigned long size;
+        unsigned long recursive_size;
 
         template <class ShapeT>
         void put(const ShapeT* p);
@@ -78,7 +79,10 @@ namespace physics
 
         void resize(const glm::vec3& center, const glm::vec3& extent);
         void add_level();
-        unsigned long get_size() { return size; }
+
+        void optimize();
+
+        unsigned long get_size() const { return size; }
     };
 
     template <class... Ts>
@@ -174,6 +178,20 @@ namespace physics
     void octree<Ts...>::resize(const glm::vec3 &center, const glm::vec3 &extent) {
         Expects(children.size() == 0);
         box = {center, extent};
+    }
+
+    template <class... Ts>
+    void octree<Ts...>::optimize()
+    {
+        recursive_size = size;
+        if (children.empty()) return;
+        std::for_each(children.begin(), children.end(), [&](auto& child) {
+            child.optimize();
+            recursive_size += child.recursive_size;
+        });
+        children.erase(std::remove_if(children.begin(), children.end(), [](auto& child){
+            return child.recursive_size == 0;
+        }), children.end());
     }
 
     template <class octree_type, class HandlerT>
