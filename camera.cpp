@@ -17,7 +17,6 @@
 #include <tbb/task_scheduler_init.h>
 #include <tbb/task_group.h>
 #include <tbb/parallel_do.h>
-#include <tbb/parallel_for.h>
 #endif
 
 namespace rtr {
