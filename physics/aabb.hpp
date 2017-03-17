@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 #include <ostream>
 
 namespace rtr
@@ -27,5 +27,18 @@ struct aabb {
            << "(" << box.extent.x << ", " << box.extent.y << ", " << box.extent.z << ") }";
     }
 };
+
+    inline aabb from_min_max(const glm::vec3& min, const glm::vec3& max)
+    {
+        return { (min + max) * 0.5f, max - min };
+    }
+
+    inline aabb merge(const aabb& a, const aabb& b)
+    {
+        auto min = glm::min(a.min, b.min);
+        auto max = glm::max(a.max, b.max);
+
+        return from_min_max(min, max);
+    }
 }
 }

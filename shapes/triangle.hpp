@@ -12,11 +12,26 @@
 #include <physics/collision.hpp>
 #include <glm/glm.hpp>
 #include <transform/transform.hpp>
+#include <physics/aabb.hpp>
 
 namespace rtr
 {
 namespace shapes
 {
+    inline physics::aabb from_tri(const std::array<glm::vec3, 3>& verts)
+    {
+         glm::vec3 min = verts[0];
+        glm::vec3 max = min;
+
+        for (auto& vert : verts)
+        {
+            min = glm::min(min, vert);
+            max = glm::max(max, vert);
+        }
+
+        return physics::from_min_max(min, max);
+    }
+
     class triangle
     {
         struct tri_corners
@@ -34,6 +49,8 @@ namespace shapes
 
         glm::vec3 m_normal;
 
+        physics::aabb box;
+
     public:
 
         struct param_res_t
@@ -47,9 +64,8 @@ namespace shapes
             } data;
         };
 
-        triangle(const std::array<glm::vec3, 3>& vs) : vertices(vs)
+        triangle(const std::array<glm::vec3, 3>& vs) : vertices(vs), box(from_tri(vertices))
         {
-
             m_normal = glm::normalize(glm::cross(verts.b - verts.a, verts.c - verts.a));
         }
 
@@ -66,6 +82,13 @@ namespace shapes
         }
 
         float get_area() const;
+
+        glm::vec3 get_center() const
+        {
+            return (verts.a + verts.b + verts.c) * 0.3333333f;
+        }
+
+        const physics::aabb& bounding_box() const;
     };
 
     physics::collide_result intersect(const physics::aabb&, const triangle&);

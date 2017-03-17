@@ -32,6 +32,8 @@ namespace rtr {
 
 #define RTR_VERSION_STRING STR(RTR_VERSION_MAJOR) "." STR(RTR_VERSION_MINOR) "." STR(RTR_VERSION_PATCH)
         constexpr auto version_str = RTR_VERSION_STRING;
+
+        constexpr auto octree_cutoff = 2;
     }
 }
 

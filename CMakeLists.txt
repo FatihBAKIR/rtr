@@ -49,7 +49,7 @@ set (PHYSICS_FILES
         physics/octree.hpp
         physics/collision.hpp physics/collision.cpp
         physics/aabb.hpp
-        physics/aabb_tri_intersect.cpp)
+        physics/aabb_tri_intersect.cpp physics/bvh.hpp)
 
 set (TinyXML_FILES 3rd_party/tinyxml2/tinyxml2.cpp)
 
@@ -74,7 +74,7 @@ set (COMMON_FILES ${LIGHT_FILES} ${SHAPE_FILES} ${TinyXML_FILES} ${PHYSICS_FILES
 
 set (GIL_HDR_FILES gil_extension/exr/detail/color_space_traits.cpp)
 
-set (TEST_FILES ${GIL_HDR_FILES} ${COMMON_FILES} tests/physics/collisions.cpp tests/tests_main.cpp)
+set (TEST_FILES ${GIL_HDR_FILES} ${COMMON_FILES} tests/physics/collisions.cpp tests/tests_main.cpp tests/physics/bvh_tests.cpp)
 
 set (SOURCE_FILES ${GIL_HDR_FILES} ${COMMON_FILES} main.cpp)
 
@@ -104,7 +104,9 @@ find_package(Spdlog REQUIRED)
 find_package(Curses)
 
 set(TBB_ROOT_DIR "/home/fatih/tbb")
-find_package(TBB REQUIRED)
+set(TBB_USE_DEBUG_BUILD False)
+
+find_package(TBB REQUIRED )
 
 target_include_directories(ray PUBLIC ${CMAKE_SOURCE_DIR})
 
@@ -116,7 +118,7 @@ target_include_directories(ray PUBLIC 3rd_party/glm)
 target_include_directories(ray PUBLIC 3rd_party/tinyxml2)
 
 if (PNG_FOUND)
-    message("Found PNG, Building PNG Output Support")
+    message(STATUS "Found PNG, Building PNG Output Support")
 
     target_compile_definitions(ray PRIVATE RTR_PNG_SUPPORT=1)
 
@@ -125,7 +127,7 @@ if (PNG_FOUND)
 endif()
 
 if (OpenEXR_FOUND)
-    message("Found OpenEXR, Building EXR Output Support")
+    message(STATUS "Found OpenEXR, Building EXR Output Support")
 
     target_compile_definitions(ray PRIVATE RTR_OPENEXR_SUPPORT=1)
 
@@ -134,7 +136,7 @@ if (OpenEXR_FOUND)
 endif()
 
 if (spdlog_FOUND)
-    message("Found Spdlog, Building logging support")
+    message(STATUS "Found Spdlog, Building logging support")
 
     target_compile_definitions(ray PRIVATE RTR_SPDLOG_SUPPORT=1)
 

@@ -14,14 +14,90 @@
 #include <shapes.hpp>
 
 #include <spdlog/spdlog.h>
+#include <rtr_config.hpp>
+
 #ifndef __linux__
 #include <spdlog/fmt/ostr.h>
 #endif
+
+#include <physics/bvh.hpp>
 
 namespace rtr
 {
 namespace shapes
 {
+    template <class IteratorT>
+    std::unique_ptr<physics::bvh<triangle>> generate_bvh(physics::aabb bb, IteratorT begin, IteratorT end, int axis = 0)
+    {
+        auto count = std::distance(begin, end);
+        if (count == 0)
+        {
+            return nullptr;
+        }
+        if (count == 1)
+        {
+            return std::make_unique<physics::bvh<triangle>>(physics::bvh<triangle>{ (*begin)->bounding_box(), nullptr, nullptr, *begin });
+        }
+
+        Expects(glm::length(bb.extent) > 0);
+
+        Expects(end > begin);
+
+        auto center = std::next(begin, count / 2);
+        std::nth_element(begin, center, end, [&](const triangle* tri_p, const triangle* tri2_p)
+        {
+            return tri_p->get_center()[axis] < tri2_p->get_center()[axis];
+        });
+
+        auto p2_count = std::distance(begin, center);
+
+        auto seperating_axis = (*center)->get_center()[axis];
+        auto max_p1 = bb.max;
+        auto min_p2 = bb.min;
+        min_p2[axis] = max_p1[axis] = seperating_axis;
+
+        auto part1 = physics::from_min_max(bb.min, max_p1);
+        auto part2 = physics::from_min_max(min_p2, bb.max);
+
+        auto p1_h = generate_bvh(part1, begin, center, (axis + 1) % 3);
+        auto p2_h = generate_bvh(part2, center, end, (axis + 1) % 3);
+
+        bb = (p1_h && p2_h) ? physics::merge(p1_h->box, p2_h->box) : (!p1_h ? p2_h->box : p1_h->box);
+
+        return std::make_unique<physics::bvh<triangle>>(physics::bvh<triangle>{ bb, std::move(p1_h), std::move(p2_h), nullptr });
+    }
+
+    auto make_bvh(gsl::span<triangle> tris)
+    {
+        static int cnt = 0;
+        auto logger = spdlog::stderr_logger_st("mesh data " + std::to_string(++cnt));
+        logger->info("Partitioning mesh into octree");
+        logger->info("Mesh has {0} tris", tris.size());
+
+        auto begin = std::chrono::high_resolution_clock::now();
+        glm::vec3 min = tris[0].get_vertices()[0];
+        glm::vec3 max = min;
+
+        std::vector<triangle*> ptrs;
+        ptrs.reserve(tris.size());
+        for (auto& tri : tris)
+        {
+            auto verts = tri.get_vertices();
+            for (auto& vert : verts)
+            {
+                min = glm::min(min, vert);
+                max = glm::max(max, vert);
+            }
+            ptrs.push_back(&tri);
+        }
+
+        auto end = std::chrono::high_resolution_clock::now();
+
+        logger->info("Partitioning took {0} ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count());
+
+        return generate_bvh(physics::from_min_max(min, max), ptrs.begin(), ptrs.end());
+    }
+
     physics::octree<triangle> partition(gsl::span<triangle> tris)
     {
         static int cnt = 0;
@@ -31,23 +107,15 @@ namespace shapes
 
         auto begin = std::chrono::high_resolution_clock::now();
         glm::vec3 min = tris[0].get_vertices()[0];
-        glm::vec3 max = tris[0].get_vertices()[0];
+        glm::vec3 max = min;
 
         for (auto& tri : tris)
         {
             auto verts = tri.get_vertices();
             for (auto& vert : verts)
             {
-                for (int j = 0; j < 3; ++j) {
-                    if (min[j] > vert[j])
-                    {
-                        min[j] = vert[j];
-                    }
-                    if (max[j] < vert[j])
-                    {
-                        max[j] = vert[j];
-                    }
-                }
+                min = glm::min(min, vert);
+                max = glm::max(max, vert);
             }
         }
 
@@ -61,11 +129,6 @@ namespace shapes
         for (auto& tri : tris)
         {
             auto oc = partition.insert(tri);
-
-            if (oc->get_size() > 2 && oc->get_children().size() == 0)
-            {
-                oc->add_level();
-            }
         }
 
         partition.optimize();
@@ -97,7 +160,7 @@ namespace shapes
     mesh::~mesh() noexcept = default;
 
     mesh::mesh(boost::container::vector<triangle> tris, bvector<int> indices, const material* m)
-            : tris(std::move(tris)), face_indices(std::move(indices)), part(partition(this->tris)), mat(m)
+            : tris(std::move(tris)), face_indices(std::move(indices)), hier(make_bvh(this->tris)), mat(m)
     {
     }
 
@@ -106,7 +169,7 @@ namespace shapes
         triangle::param_res_t cur_param = {std::numeric_limits<float>::infinity(), {}};
         const triangle* cur_hit = nullptr;
 
-        traverse_octree(part, ray, [&](const triangle* tri)
+        traverse(*hier, ray, [&](const triangle* tri)
         {
             auto p = tri->get_parameter(ray);
             if (p)
@@ -130,9 +193,9 @@ namespace shapes
 
     mesh::mesh(mesh && rhs) noexcept :
         tris(std::move(rhs.tris)),
-        part(std::move(rhs.part)),
         face_indices(std::move(rhs.face_indices)),
         vert_normals(std::move(rhs.vert_normals)),
+        hier(std::move(rhs.hier)),
         mat(rhs.mat)
     {
     }

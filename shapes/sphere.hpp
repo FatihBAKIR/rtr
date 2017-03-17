@@ -48,6 +48,8 @@ public:
 
     boost::optional<param_res_t> get_parameter(const physics::ray& ray) const;
     physics::ray_hit intersect(const physics::ray& ray, float parameter, const data_t& data) const;
+
+    physics::aabb bounding_box() const;
 };
 }
 }

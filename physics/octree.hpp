@@ -14,7 +14,8 @@
 #include <physics/collision.hpp>
 #include <array>
 #include <boost/fusion/algorithm.hpp>
-#include <queue>
+#include <boost/circular_buffer.hpp>
+#include <rtr_config.hpp>
 
 namespace rtr
 {
@@ -37,6 +38,8 @@ namespace physics
 
         vector_tuple ptr_vectors;
 
+        octree* parent;
+
         unsigned long size;
         unsigned long recursive_size;
 
@@ -51,8 +54,10 @@ namespace physics
 
         template <class ShapeT>
         octree* where(const ShapeT& shape);
+
+        void tighten();
     public:
-        octree(const glm::vec3 &center, const glm::vec3 &extent) : box(center, extent), size{}
+        octree(const glm::vec3 &center, const glm::vec3 &extent, octree* parent = nullptr) : box(center, extent), size{}, parent(parent)
         {}
 
         const aabb& bounding_box() const
@@ -102,10 +107,20 @@ namespace physics
         auto& v = boost::fusion::at_c<index>(ptr_vectors);
         v.push_back(p);
         ++size;
+
+        auto tot = physics::merge(bounding_box(), p->bounding_box());
+        resize(tot.position, tot.extent);
+
+        if (get_size() > config::octree_cutoff && children.empty())
+        {
+            add_level();
+        }
     }
 
     template <class... Ts>
     void octree<Ts...>::add_level() {
+        Expects(children.empty());
+
         children.reserve(8);
 
         auto half = box.extent * 0.5f;
@@ -128,8 +143,19 @@ namespace physics
 
         for (aabb& box : children_boxes)
         {
-            children.emplace_back(box.position, box.extent);
+            children.emplace_back(box.position, box.extent, this);
         }
+
+        for_shapes([this](auto shape)
+        {
+            auto to = this->where(*shape);
+            if (to != this)
+            {
+                Expects(to != nullptr);
+                to->put(shape);
+                this->erase(shape);
+            }
+        });
     }
 
     template <class... Ts>
@@ -141,6 +167,8 @@ namespace physics
             return this;
         }
 
+        int count = 0;
+        float dist = std::numeric_limits<float>::infinity();
         octree* ch = nullptr;
 
         for (auto& child : children)
@@ -148,17 +176,24 @@ namespace physics
             using physics::intersect; // use ADL
             if (intersect(child.box, shape))
             {
-                if (ch)
+                ++count;
+                float new_dist = glm::length(child.box.position - shape.get_center());
+                if (new_dist < dist)
                 {
-                    return this;
+                    dist = new_dist;
+                    ch = &child;
                 }
-                ch = &child;
             }
         }
 
-        if (!ch)
+        if (count == 0)
         {
-            return nullptr;
+            return this;
+        }
+
+        if (count > 3)
+        {
+            return this;
         }
 
         return ch->where(shape);
@@ -170,21 +205,29 @@ namespace physics
     {
         constexpr auto index = png::index_of_t<ShapeT, types_list>();
         auto& v = boost::fusion::at_c<index>(ptr_vectors);
-        v.erase(std::remove(v.begin(), v.end(), p));
+        v.erase(std::remove(v.begin(), v.end(), p), v.end());
         --size;
     }
 
     template <class... Ts>
     void octree<Ts...>::resize(const glm::vec3 &center, const glm::vec3 &extent) {
-        Expects(children.size() == 0);
         box = {center, extent};
+        if (parent)
+        {
+            auto tot = merge(parent->bounding_box(), bounding_box());
+            parent->resize(tot.position, tot.extent);
+        }
     }
 
     template <class... Ts>
     void octree<Ts...>::optimize()
     {
         recursive_size = size;
-        if (children.empty()) return;
+        if (children.empty())
+        {
+            tighten();
+            return;
+        }
         std::for_each(children.begin(), children.end(), [&](auto& child) {
             child.optimize();
             recursive_size += child.recursive_size;
@@ -192,19 +235,48 @@ namespace physics
         children.erase(std::remove_if(children.begin(), children.end(), [](auto& child){
             return child.recursive_size == 0;
         }), children.end());
+        tighten();
+    }
+
+    template <class... Ts>
+    void octree<Ts...>::tighten() {
+        boost::optional<aabb> box;
+
+        for (auto& child : get_children())
+        {
+            if (!box)
+            {
+                box = child.bounding_box();
+                continue;
+            }
+            *box = merge(*box, child.bounding_box());
+        }
+
+        for_shapes([&](auto s_p)
+        {
+            if (!box)
+            {
+                box = s_p->bounding_box();
+                return;
+            }
+            *box = merge(*box, s_p->bounding_box());
+        });
+
+        if (!box) return;
+        resize(box->position, box->extent);
     }
 
     template <class octree_type, class HandlerT>
     void traverse_octree(const octree_type& otree, const physics::ray& ray, HandlerT fun)
     {
-        std::queue<const octree_type*> q;
+        thread_local boost::circular_buffer<const octree_type*> q(1024);
 
-        using physics::intersect;
-        auto put_octree = [&q, &ray](const octree_type* elem)
+        auto put_octree = [&ray](const octree_type* elem)
         {
+            using physics::intersect;
             if (intersect(elem->bounding_box(), ray))
             {
-                q.push(elem);
+                q.push_back(elem);
             }
         };
 
@@ -213,7 +285,7 @@ namespace physics
         while (!q.empty())
         {
             const octree_type* oc = q.front();
-            q.pop();
+            q.pop_front();
 
             for (auto& c : oc->get_children())
             {

@@ -9,27 +9,25 @@
 #include <physics/ray.hpp>
 #include <vertex.hpp>
 #include <queue>
+#include <iostream>
 
+thread_local boost::circular_buffer<const rtr::scene::octree_type*> q_s(1024);
 bool rtr::scene::ray_cast_param(const physics::ray& ray, float min_param, float max_param) const
 {
     bool res = false;
-    std::queue<const octree_type*> q;
-    q.push(&part);
-
+    std::queue<const octree_type*, decltype(q_s)> q (q_s);
     using physics::intersect;
+    if (intersect(part.bounding_box(), ray))
+    q.push(&part);
 
     while (!q.empty())
     {
         const octree_type* oc = q.front();
         q.pop();
 
-        if (!intersect(oc->bounding_box(), ray))
-        {
-            continue;
-        }
-
         for (auto& c : oc->get_children())
         {
+            if (intersect(part.bounding_box(), ray))
             q.push(&c);
         }
 
@@ -93,7 +91,7 @@ boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::
 }
 
 rtr::scene::scene(const glm::vec3& c, const glm::vec3& e, const std::unordered_map<long, rtr::material*> mats)
-        : part(c, e), mats(std::move(mats))
+        : part(c, e, nullptr), mats(std::move(mats))
 {
 }
 

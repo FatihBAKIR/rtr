@@ -23,17 +23,9 @@ class scene
     using light_vectors = png::map_t<png::mapper<bvector>, light_list>;
     using light_vector_tuple = png::convert_t<boost::fusion::vector, light_vectors>;
 
-    using octree_type = png::convert_t<physics::octree, shape_list>;
-
-    octree_type part;
-    shape_vector_tuple shapes;
-    light_vector_tuple lights;
-    std::unique_ptr<lights::ambient_light> ambient;
-
-    std::unordered_map<long, material*> mats;
-
 public:
 
+    using octree_type = png::convert_t<physics::octree, shape_list>;
     glm::vec3 m_background;
     float m_shadow_epsilon;
     float m_test_epsilon;
@@ -92,5 +84,13 @@ public:
 
     void resize(const glm::vec3& pos, const glm::vec3& extent);
     void finalize();
+private:
+
+    octree_type part;
+    shape_vector_tuple shapes;
+    light_vector_tuple lights;
+    std::unique_ptr<lights::ambient_light> ambient;
+
+    std::unordered_map<long, material*> mats;
 };
 }

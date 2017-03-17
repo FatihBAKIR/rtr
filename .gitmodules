@@ -7,3 +7,6 @@
 [submodule "3rd_party/tinyxml2"]
 	path = 3rd_party/tinyxml2
 	url = git@github.com:leethomason/tinyxml2.git
+[submodule "3rd_party/assimp"]
+	path = 3rd_party/assimp
+	url = git@github.com:assimp/assimp.git

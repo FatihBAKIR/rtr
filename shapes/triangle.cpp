@@ -4,6 +4,7 @@
 
 #include <shapes/triangle.hpp>
 #include <physics/ray.hpp>
+#include <physics/aabb.hpp>
 
 namespace rtr {
     namespace shapes {
@@ -45,6 +46,10 @@ namespace rtr {
         float triangle::get_area() const
         {
             return glm::length(glm::cross(verts.b - verts.a, verts.c - verts.a)) * 0.5f;
+        }
+
+        const physics::aabb& triangle::bounding_box() const {
+            return box;
         }
     }
 }

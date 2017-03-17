@@ -34,6 +34,9 @@ namespace rtr {
 
         template<class...>
         class octree;
+
+        template <class T>
+        class bvh;
     }
 
     namespace lights

@@ -8,6 +8,7 @@
 #include "sphere.hpp"
 #include <iostream>
 #include <utility.hpp>
+#include <physics/aabb.hpp>
 
 constexpr bool SphereInsideCollision = true;
 
@@ -62,6 +63,10 @@ namespace shapes
     physics::ray_hit sphere::intersect(const physics::ray& ray, float parameter, const data_t& data) const
     {
         return physics::ray_hit{ ray, mat, data.pos, data.normal, parameter };
+    }
+
+    physics::aabb sphere::bounding_box() const {
+        return physics::aabb{get_center(), glm::vec3(get_radius())};
     }
 }
 }

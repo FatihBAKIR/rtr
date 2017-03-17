@@ -64,7 +64,7 @@ namespace physics
 
     collide_result intersect(const aabb& box, const ray& ray)
     {
-        const auto inv = ray.get_inverse();
+        const auto& inv = ray.get_inverse();
 
         const auto& diff1 = box.min - ray.origin;
         const auto& diff2 = box.max - ray.origin;

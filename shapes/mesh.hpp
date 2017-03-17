@@ -8,20 +8,21 @@
 #include <shapes/triangle.hpp>
 #include <physics/octree.hpp>
 #include <gsl/gsl>
+#include <physics/bvh.hpp>
 
 namespace rtr
 {
 namespace shapes
 {
 class mesh {
-
-    using octree_type = physics::octree<triangle>;
+    using bvh_type = std::unique_ptr<physics::bvh<triangle>>;
 
     boost::container::vector<int> face_indices;
 
     boost::container::vector<triangle> tris;
     boost::container::vector<glm::vec3> vert_normals;
-    octree_type part;
+    bvh_type hier;
+
 
     const material* mat;
 
@@ -52,7 +53,12 @@ public:
 
     const physics::aabb& bounding_box() const
     {
-        return part.bounding_box();
+        return hier->bounding_box();
+    }
+
+    glm::vec3 get_center() const
+    {
+        return hier->bounding_box().position;
     }
 };
 }
