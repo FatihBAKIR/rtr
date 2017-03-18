@@ -23,9 +23,15 @@ class scene
     using light_vectors = png::map_t<png::mapper<bvector>, light_list>;
     using light_vector_tuple = png::convert_t<boost::fusion::vector, light_vectors>;
 
+    using const_shapes = png::map_t<png::mapper<std::add_const_t>, shape_list>;
+    using shape_pointers = png::map_t<png::mapper<std::add_pointer_t>, const_shapes>;
+
 public:
+    using shape_ptr_variant = png::convert_t<boost::variant, shape_pointers>;
 
     using octree_type = png::convert_t<physics::octree, shape_list>;
+    using shape_variant = png::convert_t<boost::variant, shape_list>;
+
     glm::vec3 m_background;
     float m_shadow_epsilon;
     float m_test_epsilon;

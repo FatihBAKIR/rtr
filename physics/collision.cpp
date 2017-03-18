@@ -19,11 +19,6 @@ namespace physics
         return x * x;
     }
 
-    class not_implemented_error : std::runtime_error
-    {
-        using std::runtime_error::runtime_error;
-    };
-
     collide_result intersect(const aabb& aabb, const geometry::sphere& sp)
     {
         float dmin = 0;

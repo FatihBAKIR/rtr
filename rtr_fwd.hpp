@@ -12,6 +12,10 @@ namespace rtr {
 
     class material;
     class rt_mat;
+    namespace shading
+    {
+        class toon_shader;
+    }
 
     struct vertex;
 

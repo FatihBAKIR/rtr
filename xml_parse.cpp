@@ -18,6 +18,7 @@
 #include <unordered_map>
 #include <materials/normal_mat.hpp>
 #include <materials/material.hpp>
+#include <materials/toon_shading.hpp>
 #include <map>
 #include <stack>
 
@@ -228,7 +229,7 @@ rtr::rt_mat read_rt_material(const xml::XMLElement* elem)
 
     return m;
 }
-    rtr::material* read_material(const xml::XMLElement* elem)
+    rtr::material* read_material(const xml::XMLElement* elem, const std::unordered_map<long, rtr::material*>& mats)
     {
         if (elem->Attribute("shader") == nullptr || elem->Attribute("shader") == std::string("ceng795"))
         {
@@ -237,6 +238,13 @@ rtr::rt_mat read_rt_material(const xml::XMLElement* elem)
         else if (elem->Attribute("shader") == std::string("normal_mat"))
         {
             auto m = new rtr::normal_mat;
+            m->id = elem->Int64Attribute("id");
+            return m;
+        }
+        else if (elem->Attribute("shader") == std::string("toon_shader"))
+        {
+            auto m = new rtr::shading::toon_shader(
+                    mats.find(elem->Int64Attribute("base_mat"))->second, elem->Int64Attribute("M"), elem->Int64Attribute("N"));
             m->id = elem->Int64Attribute("id");
             return m;
         }
@@ -336,7 +344,7 @@ namespace rtr {
             std::unordered_map<long, rtr::material*> mats;
             auto materials = root->FirstChildElement("Materials");
             for (auto c = materials->FirstChildElement(); c; c = c->NextSiblingElement()) {
-                auto m = read_material(c);
+                auto m = read_material(c, mats);
                 mats.emplace(m->id, m);
             }
 

@@ -150,7 +150,7 @@ namespace geometry
             normal = glm::normalize(normal_1 * data.alpha + normal_2 * data.beta + normal_3 * data.gamma);
         }
 
-        return physics::ray_hit{ ray, mat, ray.origin + ray.dir * parameter, normal, parameter };
+        return physics::ray_hit{ this, ray, mat, ray.origin + ray.dir * parameter, normal, parameter };
     }
 
     mesh::~mesh() noexcept = default;

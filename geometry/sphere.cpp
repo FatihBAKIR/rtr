@@ -62,7 +62,7 @@ namespace geometry
 
     physics::ray_hit sphere::intersect(const physics::ray& ray, float parameter, const data_t& data) const
     {
-        return physics::ray_hit{ ray, mat, data.pos, data.normal, parameter };
+        return physics::ray_hit{ this, ray, mat, data.pos, data.normal, parameter };
     }
 
     physics::aabb sphere::bounding_box() const {

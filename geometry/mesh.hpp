@@ -23,7 +23,6 @@ class mesh {
     boost::container::vector<glm::vec3> vert_normals;
     bvh_type hier;
 
-
     const material* mat;
 
 public:

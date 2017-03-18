@@ -7,6 +7,7 @@
 #include <glm/vec3.hpp>
 #include <rtr_fwd.hpp>
 #include <iosfwd>
+#include <scene.hpp>
 
 namespace rtr
 {
@@ -31,6 +32,7 @@ struct ray
 
 struct ray_hit
 {
+    scene::shape_ptr_variant shape;
     struct ray r;
     const material* mat;
     glm::vec3 position;
