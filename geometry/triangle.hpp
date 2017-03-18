@@ -20,7 +20,7 @@ namespace geometry
 {
     inline physics::aabb from_tri(const std::array<glm::vec3, 3>& verts)
     {
-         glm::vec3 min = verts[0];
+        glm::vec3 min = verts[0];
         glm::vec3 max = min;
 
         for (auto& vert : verts)
@@ -49,8 +49,6 @@ namespace geometry
 
         glm::vec3 m_normal;
 
-        physics::aabb box;
-
     public:
 
         struct param_res_t
@@ -64,7 +62,7 @@ namespace geometry
             } data;
         };
 
-        triangle(const std::array<glm::vec3, 3>& vs) : vertices(vs), box(from_tri(vertices))
+        triangle(const std::array<glm::vec3, 3>& vs) : vertices(vs)
         {
             m_normal = glm::normalize(glm::cross(verts.b - verts.a, verts.c - verts.a));
         }
@@ -88,7 +86,7 @@ namespace geometry
             return (verts.a + verts.b + verts.c) * 0.3333333f;
         }
 
-        const physics::aabb& bounding_box() const;
+        physics::aabb bounding_box() const;
     };
 
     physics::collide_result intersect(const physics::aabb&, const triangle&);
