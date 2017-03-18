@@ -48,8 +48,8 @@ namespace rtr {
             return glm::length(glm::cross(verts.b - verts.a, verts.c - verts.a)) * 0.5f;
         }
 
-        const physics::aabb& triangle::bounding_box() const {
-            return box;
+        physics::aabb triangle::bounding_box() const {
+            return from_tri(vertices);
         }
     }
 }
