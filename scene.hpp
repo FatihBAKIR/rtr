@@ -15,7 +15,7 @@ namespace rtr
 {
 class scene
 {
-    using shape_list = png::list<shapes::sphere, shapes::mesh>;
+    using shape_list = png::list<geometry::sphere, geometry::mesh>;
     using shape_vectors = png::map_t<png::mapper<bvector>, shape_list>;
     using shape_vector_tuple = png::convert_t<boost::fusion::vector, shape_vectors>;
 

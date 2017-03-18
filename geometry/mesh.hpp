@@ -5,14 +5,14 @@
 #pragma once
 
 #include <boost/container/container_fwd.hpp>
-#include <shapes/triangle.hpp>
+#include <geometry/triangle.hpp>
 #include <physics/octree.hpp>
 #include <gsl/gsl>
 #include <physics/bvh.hpp>
 
 namespace rtr
 {
-namespace shapes
+namespace geometry
 {
 class mesh {
     using bvh_type = std::unique_ptr<physics::bvh<triangle>>;

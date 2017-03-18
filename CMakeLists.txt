@@ -40,10 +40,10 @@ if (CMAKE_C_COMPILER_ID MATCHES "GNU")
 endif()
 
 set (LIGHT_FILES lights/point_light.hpp lights/ambient_light.hpp)
-set (SHAPE_FILES
-        shapes/mesh.hpp shapes/mesh.cpp
-        shapes/sphere.hpp shapes/sphere.cpp
-        shapes/triangle.hpp shapes/triangle.cpp)
+set (GEOMETRY_FILES
+        geometry/mesh.hpp geometry/mesh.cpp
+        geometry/sphere.hpp geometry/sphere.cpp
+        geometry/triangle.hpp geometry/triangle.cpp)
 set (PHYSICS_FILES
         physics/ray.cpp physics/ray.hpp
         physics/octree.hpp
@@ -55,7 +55,7 @@ set (TinyXML_FILES 3rd_party/tinyxml2/tinyxml2.cpp)
 
 set (TRANSFORM_FILES transform/transform.cpp transform/transform.hpp)
 
-set (COMMON_FILES ${LIGHT_FILES} ${SHAPE_FILES} ${TinyXML_FILES} ${PHYSICS_FILES} ${TRANSFORM_FILES}
+set (COMMON_FILES ${LIGHT_FILES} ${GEOMETRY_FILES} ${TinyXML_FILES} ${PHYSICS_FILES} ${TRANSFORM_FILES}
         camera.cpp camera.hpp
         transform.hpp
         scene.hpp scene.cpp

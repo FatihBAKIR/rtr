@@ -81,7 +81,7 @@ glm::mat4 parse_transform(const xml::XMLElement* elem, const std::map<std::strin
 }
 
 
-rtr::shapes::sphere
+rtr::geometry::sphere
 read_sphere(
         const xml::XMLElement* elem,
         const std::unordered_map<long, rtr::material*>& mats,
@@ -100,11 +100,11 @@ read_sphere(
     glm::mat4 full_trans = parse_transform(elem->FirstChildElement("Transformations"), transformations);
 
     auto mat_it = mats.find(mat_id);
-    return rtr::shapes::sphere(center, radius, mat_it->second, full_trans);
+    return rtr::geometry::sphere(center, radius, mat_it->second, full_trans);
 }
 
 
-rtr::shapes::mesh
+rtr::geometry::mesh
 read_mesh(const xml::XMLElement* elem,
           const std::map<short, rtr::bvector<glm::vec3>>& vs,
           const std::map<short, rtr::bvector<int>>& indices,
@@ -115,7 +115,7 @@ read_mesh(const xml::XMLElement* elem,
     auto v_id = elem->FirstChildElement("VertexBuffer")->Int64Attribute("id");
     auto i_id = elem->FirstChildElement("IndexBuffer")->Int64Attribute("id");
 
-    rtr::bvector<rtr::shapes::triangle> faces;
+    rtr::bvector<rtr::geometry::triangle> faces;
 
     glm::mat4 full_trans = parse_transform(elem->FirstChildElement("Transformations"), transformations);
 
@@ -130,7 +130,7 @@ read_mesh(const xml::XMLElement* elem,
     }
 
     auto mat_it = mats.find(mat_id);
-    rtr::shapes::mesh m(std::move(faces), inds, mat_it->second);
+    rtr::geometry::mesh m(std::move(faces), inds, mat_it->second);
     if (elem->Attribute("shadingMode") && elem->Attribute("shadingMode") == std::string("smooth"))
     {
         m.smooth_normals();

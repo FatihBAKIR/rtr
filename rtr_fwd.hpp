@@ -18,7 +18,7 @@ namespace rtr {
     class scene;
     class camera;
 
-    namespace shapes {
+    namespace geometry {
         class sphere;
 
         class triangle;

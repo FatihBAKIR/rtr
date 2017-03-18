@@ -14,7 +14,7 @@ constexpr bool SphereInsideCollision = true;
 
 namespace rtr
 {
-namespace shapes
+namespace geometry
 {
     boost::optional<sphere::param_res_t> sphere::get_parameter(const physics::ray& org_ray) const
     {

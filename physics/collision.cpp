@@ -4,8 +4,8 @@
 
 #include <physics/collision.hpp>
 #include <physics/aabb.hpp>
-#include <shapes/sphere.hpp>
-#include <shapes/mesh.hpp>
+#include <geometry/sphere.hpp>
+#include <geometry/mesh.hpp>
 #include <physics/ray.hpp>
 #include <cmath>
 
@@ -24,7 +24,7 @@ namespace physics
         using std::runtime_error::runtime_error;
     };
 
-    collide_result intersect(const aabb& aabb, const shapes::sphere& sp)
+    collide_result intersect(const aabb& aabb, const geometry::sphere& sp)
     {
         float dmin = 0;
 
@@ -57,7 +57,7 @@ namespace physics
         return true;
     }
 
-    collide_result intersect(const aabb& box, const shapes::mesh& mesh)
+    collide_result intersect(const aabb& box, const geometry::mesh& mesh)
     {
         return intersect(box, mesh.bounding_box());
     }

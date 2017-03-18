@@ -4,7 +4,7 @@
 
 #include <iostream>
 #include <queue>
-#include <shapes/mesh.hpp>
+#include <geometry/mesh.hpp>
 #include <physics/ray.hpp>
 #include <utility.hpp>
 #include <chrono>
@@ -24,7 +24,7 @@
 
 namespace rtr
 {
-namespace shapes
+namespace geometry
 {
     template <class IteratorT>
     std::unique_ptr<physics::bvh<triangle>> generate_bvh(physics::aabb bb, IteratorT begin, IteratorT end, int axis = 0)
@@ -38,10 +38,6 @@ namespace shapes
         {
             return std::make_unique<physics::bvh<triangle>>(physics::bvh<triangle>{ (*begin)->bounding_box(), nullptr, nullptr, *begin });
         }
-
-        Expects(glm::length(bb.extent) > 0);
-
-        Expects(end > begin);
 
         auto center = std::next(begin, count / 2);
         std::nth_element(begin, center, end, [&](const triangle* tri_p, const triangle* tri2_p)
@@ -71,7 +67,7 @@ namespace shapes
     {
         static int cnt = 0;
         auto logger = spdlog::stderr_logger_st("mesh data " + std::to_string(++cnt));
-        logger->info("Partitioning mesh into octree");
+        logger->info("Partitioning mesh into BVH");
         logger->info("Mesh has {0} tris", tris.size());
 
         auto begin = std::chrono::high_resolution_clock::now();

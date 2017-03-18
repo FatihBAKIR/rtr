@@ -2,12 +2,12 @@
 // Created by Mehmet Fatih BAKIR on 26/02/2017.
 //
 
-#include <shapes/triangle.hpp>
+#include <geometry/triangle.hpp>
 #include <physics/ray.hpp>
 #include <physics/aabb.hpp>
 
 namespace rtr {
-    namespace shapes {
+    namespace geometry {
         float determinant(const glm::vec3& c1, const glm::vec3& c2, const glm::vec3& c3)
         {
             return c1.x * (c2.y * c3.z - c2.z * c3.y) -
@@ -15,7 +15,7 @@ namespace rtr {
                     c3.x * (c1.y * c2.z - c1.z * c2.y);
         }
 
-        physics::collide_result intersect(const rtr::physics::aabb& a, const rtr::shapes::triangle& t)
+        physics::collide_result intersect(const rtr::physics::aabb& a, const rtr::geometry::triangle& t)
         {
             return physics::intersect(a, t.get_vertices());
         }

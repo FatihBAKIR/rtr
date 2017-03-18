@@ -16,7 +16,7 @@
 
 namespace rtr
 {
-namespace shapes
+namespace geometry
 {
     inline physics::aabb from_tri(const std::array<glm::vec3, 3>& verts)
     {

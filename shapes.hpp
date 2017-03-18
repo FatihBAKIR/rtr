@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <shapes/triangle.hpp>
-#include <shapes/mesh.hpp>
+#include <geometry/triangle.hpp>
+#include <geometry/mesh.hpp>
 
-#include <shapes/sphere.hpp>
+#include <geometry/sphere.hpp>

@@ -11,7 +11,7 @@
 
 namespace rtr
 {
-namespace shapes
+namespace geometry
 {
 class sphere
 {
