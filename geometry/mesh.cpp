@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <boost/container/static_vector.hpp>
 #include <boost/container/flat_map.hpp>
-#include <shapes.hpp>
+#include <geometry.hpp>
 
 #include <spdlog/spdlog.h>
 #include <rtr_config.hpp>

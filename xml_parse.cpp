@@ -3,7 +3,7 @@
 //
 
 #include <lights.hpp>
-#include <shapes.hpp>
+#include <geometry.hpp>
 
 #include <xml_parse.hpp>
 #include <glm/vec3.hpp>

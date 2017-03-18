@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <lights.hpp>
-#include <shapes.hpp>
+#include <geometry.hpp>
 
 #include <physics/ray.hpp>
 

@@ -12,6 +12,7 @@ namespace rtr
     {
     public:
         virtual glm::vec3 shade(const shading_ctx&) const = 0;
+        virtual ~material() = default;
         short id;
     };
 }

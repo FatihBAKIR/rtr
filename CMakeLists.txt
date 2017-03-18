@@ -66,7 +66,7 @@ set (COMMON_FILES ${LIGHT_FILES} ${GEOMETRY_FILES} ${TinyXML_FILES} ${PHYSICS_FI
         xml_parse.cpp xml_parse.hpp
         utility.hpp utility.cpp
         lights.hpp
-        shapes.hpp render_configs.hpp static_storage.cpp
+        geometry.hpp render_configs.hpp static_storage.cpp
         materials/shading_ctx.hpp
         materials/material.hpp
         materials/rt_mat.hpp materials/rt_mat.cpp
@@ -106,7 +106,7 @@ find_package(Curses)
 set(TBB_ROOT_DIR "/home/fatih/tbb")
 set(TBB_USE_DEBUG_BUILD False)
 
-find_package(TBB REQUIRED )
+find_package(TBB)
 
 target_include_directories(ray PUBLIC ${CMAKE_SOURCE_DIR})
 

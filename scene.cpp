@@ -3,7 +3,7 @@
 //
 
 #include <lights.hpp>
-#include <shapes.hpp>
+#include <geometry.hpp>
 
 #include <scene.hpp>
 #include <physics/ray.hpp>
