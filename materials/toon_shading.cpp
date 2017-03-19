@@ -5,42 +5,29 @@
 #include "toon_shading.hpp"
 #include <materials/normal_mat.hpp>
 #include <physics/ray.hpp>
+#include <boost/math/constants/constants.hpp>
+
+float luminance(const glm::vec3& col)
+{
+    return 0.2126f * col.r + 0.7152f * col.g + 0.0722f * col.b;
+}
+
+glm::vec3 set_luminance(const glm::vec3& col, float new_lumin)
+{
+    return (col / luminance(col)) * new_lumin;
+}
 
 glm::vec3 rtr::shading::toon_shader::shade(const rtr::shading_ctx &ctx) const {
-    auto new_hit = ctx.hit;
-    new_hit.normal = get_closest(ctx.hit.normal);
-    auto new_ctx = shading_ctx{ ctx.scn, ctx.view_dir, new_hit };
-    return base_mat->shade(new_ctx);
+    auto color = base_mat->shade(ctx);
+
+    constexpr float step = 30;
+
+    auto intensity = luminance(color);
+    auto updated = std::round(intensity / step) * step;
+
+    return set_luminance(color, updated);
 }
-constexpr double pi() { return std::atan(1)*4; }
+constexpr double pi() { return boost::math::constants::pi<double>(); }
 rtr::shading::toon_shader::toon_shader(const material* base, int M, int N) {
     base_mat = base; //take this as a parameter
-
-    //(x, y, z) = (sin(Pi * m/M) cos(2Pi * n/N), sin(Pi * m/M) sin(2Pi * n/N), cos(Pi * m/M))
-
-    for (int m = 0; m < M; ++m) {
-        for (int n = 0; n < N - 1; ++n) {
-            quantized.push_back(
-                    {std::sin(pi() * m / M) * std::cos(2.f * pi() * n / N),
-                     std::sin(pi() * m / M) * std::sin(2.f * pi() * n / N),
-                     std::cos(pi() * m / M)});
-        }
-    }
-}
-
-const glm::vec3 &rtr::shading::toon_shader::get_closest(const glm::vec3 &normal) const {
-    const glm::vec3* closest = nullptr;
-    float max_dot = 0;
-
-    for (auto& vec : quantized)
-    {
-        auto dp = glm::dot(normal, vec);
-        if (dp > max_dot)
-        {
-            max_dot = dp;
-            closest = &vec;
-        }
-    }
-
-    return *closest;
 }
