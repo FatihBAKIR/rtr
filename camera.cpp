@@ -21,32 +21,32 @@
 
 namespace rtr {
 
-    struct row_iterator
-            : public std::iterator<std::forward_iterator_tag, row_iterator>
+    struct pix_iterator
+            : public std::iterator<std::forward_iterator_tag, pix_iterator>
     {
-        bool operator==(const row_iterator& rhs) const
+        bool operator==(const pix_iterator& rhs) const
         {
-            return row == rhs.row;
+            return pos == rhs.pos;
         }
 
-        bool operator!=(const row_iterator& rhs) const
+        bool operator!=(const pix_iterator& rhs) const
         {
-            return row != rhs.row;
+            return pos != rhs.pos;
         }
 
-        row_iterator& operator++()
+        pix_iterator& operator++()
         {
-            row++;
+            pos++;
             pix_pos += one_right;
             return *this;
         }
 
-        row_iterator& operator*()
+        pix_iterator& operator*()
         {
             return *this;
         }
 
-        long row;
+        long pos;
         glm::vec3 pix_pos;
         glm::vec3 one_right;
     };
@@ -59,25 +59,25 @@ namespace rtr {
         using pix_type = im_type::value_type;
         using c_type = boost::gil::channel_type<pix_type>::type;
 
-        row_iterator beg_i;
-        beg_i.row = 0;
+        pix_iterator beg_i;
+        beg_i.pos = 0;
         beg_i.pix_pos = row_pos;
         beg_i.one_right = one_right;
 
-        row_iterator end_i;
-        end_i.row = cam.plane.width;
+        pix_iterator end_i;
+        end_i.pos = cam.plane.width;
 
-        auto render_pix = [&](const row_iterator& i)
+        auto render_pix = [&](const pix_iterator& i)
         {
             ray r(cam.t.position, glm::normalize(i.pix_pos - cam.t.position));
 
             auto res = scene.ray_cast(r);
             if (res) {
                 const auto &c = camera::render_type::process(res->mat->shade(shading_ctx{scene, -r.dir, *res}));
-                v(i.row, row) = pix_type(c_type(c[0]), c_type(c[1]), c_type(c[2]));
+                v(i.pos, row) = pix_type(c_type(c[0]), c_type(c[1]), c_type(c[2]));
             } else {
                 const auto &c = camera::render_type::process(scene.m_background);
-                v(i.row, row) = pix_type(c_type(c[0]), c_type(c[1]), c_type(c[2]));
+                v(i.pos, row) = pix_type(c_type(c[0]), c_type(c[1]), c_type(c[2]));
             }
         };
 
@@ -115,17 +115,17 @@ namespace rtr {
         logger->info("Using TBB policy with {} threads", tbb::task_scheduler_init::default_num_threads());
 #endif
 
-        row_iterator beg_i;
-        beg_i.row = 0;
+        pix_iterator beg_i;
+        beg_i.pos = 0;
         beg_i.pix_pos = plane.get_top_left(t) + 0.5f * one_right + 0.5f * one_down;
         beg_i.one_right = one_down;
 
-        row_iterator end_i;
-        end_i.row = plane.height;
+        pix_iterator end_i;
+        end_i.pos = plane.height;
 
-        auto render_row = [&](const row_iterator& row)
+        auto render_row = [&](const pix_iterator& row)
         {
-            render_scanline(*this, row.pix_pos, row.row, one_right, scene, v);
+            render_scanline(*this, row.pix_pos, row.pos, one_right, scene, v);
         };
 
 #if RTR_TBB_SUPPORT && !RTR_NO_THREADING
