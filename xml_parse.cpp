@@ -243,8 +243,7 @@ rtr::rt_mat read_rt_material(const xml::XMLElement* elem)
         }
         else if (elem->Attribute("shader") == std::string("toon_shader"))
         {
-            auto m = new rtr::shading::toon_shader(
-                    mats.find(elem->Int64Attribute("base_mat"))->second, elem->Int64Attribute("M"), elem->Int64Attribute("N"));
+            auto m = new rtr::shading::toon_shader;
             m->id = elem->Int64Attribute("id");
             return m;
         }
