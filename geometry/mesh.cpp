@@ -21,6 +21,7 @@
 #endif
 
 #include <physics/bvh.hpp>
+#include <tbb/task_group.h>
 
 namespace rtr
 {
@@ -55,8 +56,16 @@ namespace geometry
         auto part1 = physics::from_min_max(bb.min, max_p1);
         auto part2 = physics::from_min_max(min_p2, bb.max);
 
-        auto p1_h = generate_bvh(part1, begin, center, (axis + 1) % 3);
-        auto p2_h = generate_bvh(part2, center, end, (axis + 1) % 3);
+        tbb::task_group g;
+
+        std::unique_ptr<physics::bvh<triangle>> p1_h, p2_h;
+        g.run([&]{
+            p1_h = generate_bvh(part1, begin, center, (axis + 1) % 3);
+        });
+        g.run([&]{
+            p2_h = generate_bvh(part2, center, end, (axis + 1) % 3);
+        });
+        g.wait();
 
         bb = (p1_h && p2_h) ? physics::merge(p1_h->box, p2_h->box) : (!p1_h ? p2_h->box : p1_h->box);
 
@@ -87,11 +96,12 @@ namespace geometry
             ptrs.push_back(&tri);
         }
 
+        auto res = generate_bvh(physics::from_min_max(min, max), ptrs.begin(), ptrs.end());
         auto end = std::chrono::high_resolution_clock::now();
 
         logger->info("Partitioning took {0} ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count());
 
-        return generate_bvh(physics::from_min_max(min, max), ptrs.begin(), ptrs.end());
+        return res;
     }
 
     physics::octree<triangle> partition(gsl::span<triangle> tris)
