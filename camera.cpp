@@ -59,20 +59,29 @@ namespace rtr {
         using pix_type = im_type::value_type;
         using c_type = boost::gil::channel_type<pix_type>::type;
 
-        for (int col = 0; col < cam.plane.width; ++col) {
-            ray r(cam.t.position, glm::normalize(row_pos - cam.t.position));
+        row_iterator beg_i;
+        beg_i.row = 0;
+        beg_i.pix_pos = row_pos;
+        beg_i.one_right = one_right;
+
+        row_iterator end_i;
+        end_i.row = cam.plane.width;
+
+        auto render_pix = [&](const row_iterator& i)
+        {
+            ray r(cam.t.position, glm::normalize(i.pix_pos - cam.t.position));
 
             auto res = scene.ray_cast(r);
             if (res) {
                 const auto &c = camera::render_type::process(res->mat->shade(shading_ctx{scene, -r.dir, *res}));
-                v(col, row) = pix_type(c_type(c[0]), c_type(c[1]), c_type(c[2]));
+                v(i.row, row) = pix_type(c_type(c[0]), c_type(c[1]), c_type(c[2]));
             } else {
                 const auto &c = camera::render_type::process(scene.m_background);
-                v(col, row) = pix_type(c_type(c[0]), c_type(c[1]), c_type(c[2]));
+                v(i.row, row) = pix_type(c_type(c[0]), c_type(c[1]), c_type(c[2]));
             }
+        };
 
-            row_pos += one_right;
-        }
+        std::for_each(beg_i, end_i, render_pix);
     }
 
     typename render_config::render_traits<camera::render_type>::image_type
