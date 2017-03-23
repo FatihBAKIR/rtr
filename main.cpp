@@ -17,6 +17,7 @@
 #include <xml_parse.hpp>
 #include "rtr_config.hpp"
 #include "utility.hpp"
+#include "assimp_import.hpp"
 
 #if RTR_SPDLOG_SUPPORT
     #include <spdlog/spdlog.h>
@@ -37,6 +38,7 @@ int main(int ac, char** av)
             ("help", "produce help message")
             ("stdin", "read scene from standard input")
             ("file", po::value<std::string>()->default_value(""), "read scene from file")
+            ("assimp", po::value<std::string>()->default_value(""), "read scene from file")
             ;
 
     po::variables_map vm;
@@ -67,7 +69,7 @@ int main(int ac, char** av)
         scene_file = std::string(it, end);
     }
 
-    auto r = rtr::xml::read_scene(scene_file);
+    auto r = rtr::assimp::read_scene(vm["file"].as<std::string>());
     r.first.finalize();
 
     auto writer = make_lambda_visitor<void>(

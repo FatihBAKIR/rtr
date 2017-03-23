@@ -59,5 +59,39 @@ namespace rtr
                 put_octree(bvh->right.get());
             };
         }
+
+        template <class bvh_type, class HandlerT>
+        void traverse(const bvh_type& otree, const physics::ray& ray, HandlerT fun, const float& min_param)
+        {
+            thread_local boost::circular_buffer<const bvh_type*> q(1024);
+
+            auto put_octree = [&ray, &min_param](const bvh_type* elem)
+            {
+                if (elem && parameter(elem->bounding_box(), ray) < min_param)
+                {
+                    q.push_back(elem);
+                }
+            };
+
+            put_octree(&otree);
+
+            while (!q.empty())
+            {
+                const bvh_type* bvh = q.front();
+                q.pop_front();
+
+                if (bvh->obj)
+                {
+                    if (parameter(bvh->bounding_box(), ray) < min_param)
+                    {
+                        fun(bvh->obj);
+                    }
+                    continue;
+                }
+
+                put_octree(bvh->left.get());
+                put_octree(bvh->right.get());
+            };
+        }
     }
 }

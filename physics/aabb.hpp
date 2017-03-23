@@ -40,5 +40,14 @@ struct aabb {
 
         return from_min_max(min, max);
     }
+
+    template <class IteratorT>
+    inline aabb merge(IteratorT begin, IteratorT end)
+    {
+        std::accumulate(std::next(begin), end, begin->bounding_box(), [](const aabb& prev, const auto& elem)
+        {
+            return merge(prev, elem.bounding_box());
+        });
+    }
 }
 }

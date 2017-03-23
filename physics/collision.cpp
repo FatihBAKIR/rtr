@@ -57,6 +57,39 @@ namespace physics
         return intersect(box, mesh.bounding_box());
     }
 
+    float parameter(const aabb& box, const ray& ray)
+    {
+        const auto& inv = ray.get_inverse();
+
+        const auto& diff1 = box.min - ray.origin;
+        const auto& diff2 = box.max - ray.origin;
+        const auto& t = diff1 * inv;
+        const auto& tt = diff2 * inv;
+
+        auto& t1 = t[0];
+        auto& t2 = tt[0];
+
+        float tMin = std::min(t1, t2);
+        float tMax = std::max(t1, t2);
+
+        for (int i = 1; i < 3; ++i) {
+            auto& t1 = t[i];
+            auto& t2 = tt[i];
+
+            tMin = std::max(tMin, std::min(t1, t2));
+            tMax = std::min(tMax, std::max(t1, t2));
+        }
+
+        if (tMax >= std::max(.0f, tMin))
+        {
+            return tMin;
+        }
+        else
+        {
+            return std::numeric_limits<float>::quiet_NaN();
+        }
+    }
+
     collide_result intersect(const aabb& box, const ray& ray)
     {
         const auto& inv = ray.get_inverse();

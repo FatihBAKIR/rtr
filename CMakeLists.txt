@@ -70,7 +70,7 @@ set (COMMON_FILES ${LIGHT_FILES} ${GEOMETRY_FILES} ${TinyXML_FILES} ${PHYSICS_FI
         materials/shading_ctx.hpp
         materials/material.hpp
         materials/rt_mat.hpp materials/rt_mat.cpp
-        materials/normal_mat.cpp materials/normal_mat.hpp)
+        materials/normal_mat.cpp materials/normal_mat.hpp assimp_import.cpp assimp_import.hpp)
 
 set (GIL_HDR_FILES gil_extension/exr/detail/color_space_traits.cpp)
 
@@ -102,6 +102,7 @@ find_package(PNG REQUIRED)
 find_package(OpenEXR)
 find_package(Spdlog REQUIRED)
 find_package(Curses)
+find_package(assimp REQUIRED)
 
 set(TBB_ROOT_DIR "/home/fatih/tbb")
 set(TBB_USE_DEBUG_BUILD False)
@@ -116,6 +117,15 @@ target_include_directories(ray PUBLIC ${Boost_INCLUDE_DIRS})
 target_include_directories(ray PUBLIC 3rd_party/gsl/include)
 target_include_directories(ray PUBLIC 3rd_party/glm)
 target_include_directories(ray PUBLIC 3rd_party/tinyxml2)
+
+if (assimp_FOUND)
+    message(STATUS "Found assimp")
+
+    target_compile_definitions(ray PRIVATE RTR_ASSIMP_SUPPORT=1)
+
+    target_include_directories(ray PUBLIC ${assimp_INCLUDE_DIRS})
+    target_link_libraries(ray ${assimp_LIBRARIES})
+endif()
 
 if (PNG_FOUND)
     message(STATUS "Found PNG, Building PNG Output Support")

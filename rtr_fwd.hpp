@@ -12,6 +12,7 @@ namespace rtr {
 
     class material;
     class rt_mat;
+    class normal_mat;
     namespace shading
     {
         class toon_shader;

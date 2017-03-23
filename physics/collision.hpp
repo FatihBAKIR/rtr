@@ -20,5 +20,7 @@ namespace physics
     collide_result intersect(const aabb&, const geometry::mesh&);
     collide_result intersect(const aabb&, const geometry::sphere&);
     collide_result intersect(const aabb&, gsl::span<const glm::vec3>);
+
+    float parameter(const aabb& box, const ray& ray);
 }
 }
