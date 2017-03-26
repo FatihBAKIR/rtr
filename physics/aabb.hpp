@@ -6,6 +6,7 @@
 
 #include <glm/glm.hpp>
 #include <ostream>
+#include <numeric>
 
 namespace rtr
 {
@@ -44,7 +45,7 @@ struct aabb {
     template <class IteratorT>
     inline aabb merge(IteratorT begin, IteratorT end)
     {
-        std::accumulate(std::next(begin), end, begin->bounding_box(), [](const aabb& prev, const auto& elem)
+        return std::accumulate(std::next(begin), end, begin->bounding_box(), [](const aabb& prev, const auto& elem)
         {
             return merge(prev, elem.bounding_box());
         });
