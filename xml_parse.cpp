@@ -22,6 +22,7 @@
 #include <map>
 #include <stack>
 #include <materials/mirror_material.h>
+#include <materials/glass.h>
 
 namespace xml = tinyxml2;
 namespace {
@@ -209,7 +210,10 @@ namespace {
         iss = std::istringstream(get_text("SpecularReflectance"));
         iss >> m.specular[0] >> m.specular[1] >> m.specular[2];
 
+        if (elem->FirstChildElement("PhongExponent"))
         m.phong = elem->FirstChildElement("PhongExponent")->FloatText();
+        else
+            m.phong = 0;
 
         return m;
     }
@@ -229,6 +233,24 @@ namespace {
         return { base_mat, ref };
     }
 
+    rtr::shading::glass read_glass_mat(const xml::XMLElement* elem)
+    {
+        float index;
+
+        auto get_text = [&](const char *name) {
+            return elem->FirstChildElement(name)->GetText();
+        };
+
+
+        glm::vec3 ref;
+        auto iss = std::istringstream(get_text("Transparency"));
+        iss >> ref[0] >> ref[1] >> ref[2];
+
+        index = elem->FirstChildElement("RefractionIndex")->FloatText();
+
+        return { ref, index };
+    }
+
     rtr::material *read_material(const xml::XMLElement *elem, const std::unordered_map<long, rtr::material *> &mats) {
         if (elem->Attribute("shader") == nullptr || elem->Attribute("shader") == std::string("ceng795")) {
             return new rtr::rt_mat(read_rt_material(elem));
@@ -243,6 +265,11 @@ namespace {
         } else if (elem->Attribute("shader") == std::string("mirror"))
         {
             auto ret = new rtr::shading::mirror_material(read_mirror_mat(elem));
+            ret->id = elem->Int64Attribute("id");
+            return ret;
+        } else if (elem->Attribute("shader") == std::string("glass"))
+        {
+            auto ret = new rtr::shading::glass(read_glass_mat(elem));
             ret->id = elem->Int64Attribute("id");
             return ret;
         }

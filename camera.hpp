@@ -45,7 +45,9 @@ public:
     using render_type = render_config::ldr_render;
 
     camera(const glm::vec3& pos, const glm::vec3& up, const glm::vec3 & gaze, const im_plane& p, const std::string& output) :
-            t{pos, glm::normalize(up), glm::normalize(-gaze), glm::cross(t.up, t.forward)}, plane{p}, m_output{output} {}
+            t{pos, glm::normalize(up), glm::normalize(-gaze), glm::normalize(glm::cross(t.up, t.forward))}, plane{p}, m_output{output} {
+        t.up = glm::normalize(glm::cross(t.right, -t.forward));
+    }
 
     typename render_config::render_traits<render_type>::image_type
     render(const scene& scene) const;
@@ -55,7 +57,7 @@ public:
         return m_output;
     }
 private:
-    const transformation t;
+    transformation t;
     im_plane plane;
     std::string m_output;
 

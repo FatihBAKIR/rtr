@@ -10,9 +10,9 @@ namespace rtr
 {
 struct transformation
 {
-    const glm::vec3 position;
-    const glm::vec3 up;
-    const glm::vec3 forward;
-    const glm::vec3 right;
+    glm::vec3 position;
+    glm::vec3 up;
+    glm::vec3 forward;
+    glm::vec3 right;
 };
 }
