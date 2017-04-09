@@ -69,7 +69,7 @@ int main(int ac, char** av)
         scene_file = std::string(it, end);
     }
 
-    auto r = rtr::assimp::read_scene(vm["file"].as<std::string>());
+    auto r = rtr::xml::read_scene(scene_file);
     r.first.finalize();
 
     auto writer = make_lambda_visitor<void>(

@@ -70,6 +70,7 @@ namespace rtr {
         auto render_pix = [&](const pix_iterator& i)
         {
             ray r(cam.t.position, glm::normalize(i.pix_pos - cam.t.position));
+            r.rtl = scene.get_rtl();
 
             auto res = scene.ray_cast(r);
             if (res) {

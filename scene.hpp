@@ -88,10 +88,20 @@ public:
         return *ambient;
     }
 
+    void set_rtl(std::uint8_t v)
+    {
+        rtl = v;
+    }
+
+    auto get_rtl() const {
+        return rtl;
+    }
+
     void resize(const glm::vec3& pos, const glm::vec3& extent);
     void finalize();
 private:
 
+    std::uint8_t rtl;
     octree_type part;
     shape_vector_tuple shapes;
     light_vector_tuple lights;

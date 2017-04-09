@@ -16,6 +16,7 @@ namespace rtr {
     namespace shading
     {
         class toon_shader;
+        class mirror_material;
     }
 
     struct vertex;
