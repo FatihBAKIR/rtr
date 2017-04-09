@@ -24,6 +24,7 @@ else:
 for cam in root.iterfind("Camera"):
     converted_cameras.append(copy.deepcopy(cam))
 
+converted_root.append(copy.deepcopy(root.find("MaxRecursionDepth")))
 converted_root.append(copy.deepcopy(root.find("BackgroundColor")))
 converted_root.append(copy.deepcopy(root.find("Lights"))) # lights need no modification
 
@@ -32,10 +33,29 @@ if not (root.find("Transformations") is None):
 else:
     etree.SubElement(converted_root, "Transformations")
 
-converted_root.append(copy.deepcopy(root.find("Materials"))) # materials are almost the same
-for mat in converted_root.find("Materials").iterfind("Material"):
-    if not "shader" in mat.attrib:
-        mat.attrib["shader"] = "ceng795" # just set the shaders
+#converted_root.append(copy.deepcopy(root.find("Materials"))) # materials are almost the same
+
+new_mats = etree.SubElement(converted_root, "Materials")
+
+for mat in root.find("Materials"):
+    if "shader" in mat.attrib:
+        new_mats.append(copy.deepcopy(mat))
+        continue
+
+    if not mat.find("RefractionIndex") is None:
+        if not mat.find("RefractionIndex").text == "1" and not mat.find("Transparency") == "0 0 0":
+            mat.attrib["shader"] = "glass"
+            new_mats.append(copy.deepcopy(mat))
+            continue
+
+    if not mat.find("MirrorReflectance") is None:
+        if not mat.find("MirrorReflectance").text == "0 0 0":
+            mat.attrib["shader"] = "mirror"
+            new_mats.append(copy.deepcopy(mat))
+            continue
+
+    mat.attrib["shader"] = "ceng795"
+    new_mats.append(copy.deepcopy(mat))
 
 def group(lst, n):
     return zip(*[lst[i::n] for i in range(n)])
@@ -96,11 +116,12 @@ scn_extent = [sum(x) for x in zip(scn_extent, (max_radius, max_radius, max_radiu
 converted_root.attrib["center"] = " ".join(map(str, scn_center))
 converted_root.attrib["extent"] = " ".join(map(str, scn_extent))
 
-def add_mesh(mat_id, faces):
+def add_mesh(mat_id, face_elem):
     new_elem = etree.Element("Mesh")
     etree.SubElement(new_elem, "Material").text = str(mat_id)
 
-    face_indices = [int(x) for x in faces.text.split()]
+    offset = int(face_elem.attrib["vertexOffset"])
+    face_indices = [int(x) + offset for x in face_elem.text.split()]
     faces = group(face_indices, 3)
 
     used_vertices = []
@@ -123,6 +144,10 @@ meshes = {}
 
 for mesh in objects.iterfind("Mesh"):
     faces = mesh.find("Faces")
+
+    if not "vertexOffset" in faces.attrib:
+        faces.attrib["vertexOffset"] = "0"
+
     new_elem = add_mesh(int(mesh.find("Material").text), faces)
     if not "shadingMode" in mesh.attrib:
         mesh.attrib["shadingMode"] = "flat"
@@ -152,6 +177,10 @@ for mesh_inst in objects.iterfind("MeshInstance"):
 
 for tri in objects.iterfind("Triangle"):
     faces = tri.find("Indices")
+
+    if not "vertexOffset" in faces.attrib:
+        faces.attrib["vertexOffset"] = "0"
+
     new_elem = add_mesh(int(mesh.find("Material").text), faces)
 
     new_elem.attrib["FromTri"] = str(True)

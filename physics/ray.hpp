@@ -17,11 +17,10 @@ struct ray
 {
     glm::vec3 origin;
     glm::vec3 dir;
-    mutable glm::vec3 m_inverse;
+    std::uint8_t rtl; // reflections to live, if 0, discard
+    glm::vec3 m_inverse;
 
-    constexpr ray(const glm::vec3& origin, const glm::vec3& dir) : origin{origin}, dir{dir} {
-        m_inverse = glm::vec3(1.f, 1.f, 1.f) / dir;
-    }
+    ray(const glm::vec3& origin, const glm::vec3& dir) : origin{origin}, dir{dir}, m_inverse{glm::vec3(1.f, 1.f, 1.f) / dir} {}
 
     friend std::ostream& operator<<(std::ostream& os, const ray& r);
 
