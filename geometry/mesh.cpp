@@ -28,7 +28,7 @@ namespace rtr
 namespace geometry
 {
     template <class IteratorT>
-    std::unique_ptr<physics::bvh<triangle>> generate_bvh(physics::aabb bb, IteratorT begin, IteratorT end, int axis = 0)
+    std::unique_ptr<physics::bvh<triangle>> generate_bvh(IteratorT begin, IteratorT end, int axis = 0)
     {
         auto count = std::distance(begin, end);
         if (count == 0)
@@ -48,26 +48,18 @@ namespace geometry
 
         auto p2_count = std::distance(begin, center);
 
-        auto seperating_axis = (*center)->get_center()[axis];
-        auto max_p1 = bb.max;
-        auto min_p2 = bb.min;
-        min_p2[axis] = max_p1[axis] = seperating_axis;
-
-        auto part1 = physics::from_min_max(bb.min, max_p1);
-        auto part2 = physics::from_min_max(min_p2, bb.max);
-
         tbb::task_group g;
 
         std::unique_ptr<physics::bvh<triangle>> p1_h, p2_h;
         g.run([&]{
-            p1_h = generate_bvh(part1, begin, center, (axis + 1) % 3);
+            p1_h = generate_bvh(begin, center, (axis + 1) % 3);
         });
         g.run([&]{
-            p2_h = generate_bvh(part2, center, end, (axis + 1) % 3);
+            p2_h = generate_bvh(center, end, (axis + 1) % 3);
         });
         g.wait();
 
-        bb = (p1_h && p2_h) ? physics::merge(p1_h->box, p2_h->box) : (!p1_h ? p2_h->box : p1_h->box);
+        auto bb = (p1_h && p2_h) ? physics::merge(p1_h->box, p2_h->box) : (!p1_h ? p2_h->box : p1_h->box);
 
         return std::make_unique<physics::bvh<triangle>>(physics::bvh<triangle>{ bb, std::move(p1_h), std::move(p2_h), nullptr });
     }
@@ -80,23 +72,15 @@ namespace geometry
         logger->info("Mesh has {0} tris", tris.size());
 
         auto begin = std::chrono::high_resolution_clock::now();
-        glm::vec3 min = tris[0].get_vertices()[0];
-        glm::vec3 max = min;
 
         std::vector<triangle*> ptrs;
         ptrs.reserve(tris.size());
         for (auto& tri : tris)
         {
-            auto verts = tri.get_vertices();
-            for (auto& vert : verts)
-            {
-                min = glm::min(min, vert);
-                max = glm::max(max, vert);
-            }
             ptrs.push_back(&tri);
         }
 
-        auto res = generate_bvh(physics::from_min_max(min, max), ptrs.begin(), ptrs.end());
+        auto res = generate_bvh(ptrs.begin(), ptrs.end());
         auto end = std::chrono::high_resolution_clock::now();
 
         logger->info("Partitioning took {0} ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count());
