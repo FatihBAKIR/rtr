@@ -18,8 +18,8 @@ namespace geometry
 {
     boost::optional<sphere::param_res_t> sphere::get_parameter(const physics::ray& org_ray) const
     {
-        auto ray = physics::ray(inv_transform * glm::vec4(org_ray.origin, 1),
-                glm::normalize(glm::vec3(inv_transform * glm::vec4(org_ray.dir, 0))));
+        auto ray = physics::ray(glm::vec3(inv_transform * glm::vec4(org_ray.origin, 1)),
+                glm::vec3(glm::normalize(glm::vec3(inv_transform * glm::vec4(org_ray.dir, 0)))));
 
         auto line = ray.origin - get_center();
 
@@ -55,7 +55,7 @@ namespace geometry
 
         auto normal = glm::normalize(glm::vec3(glm::transpose(inv_transform) * glm::vec4(pos - get_center(), 0)));
 
-        glm::vec3 world_pos = transform * glm::vec4(pos, 1);
+        glm::vec3 world_pos = glm::vec3(transform * glm::vec4(pos, 1));
 
         return { {parameter, {world_pos, normal}} };
     }

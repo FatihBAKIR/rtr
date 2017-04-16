@@ -12,6 +12,7 @@
 #include <scene.hpp>
 #include <iostream>
 #include <vector>
+#include <queue>
 
 #include <materials/rt_mat.hpp>
 #include <tinyxml2.h>
@@ -119,9 +120,9 @@ namespace {
         auto &inds = indices.find(i_id)->second;
         for (std::size_t i = 0; i < inds.size(); i += 3) {
             faces.emplace_back(std::array<glm::vec3, 3>{
-                    full_trans * glm::vec4(verts[inds[i]], 1),
-                    full_trans * glm::vec4(verts[inds[i + 1]], 1),
-                    full_trans * glm::vec4(verts[inds[i + 2]], 1),
+                    glm::vec3(full_trans * glm::vec4(verts[inds[i]], 1)),
+                    glm::vec3(full_trans * glm::vec4(verts[inds[i + 1]], 1)),
+                    glm::vec3(full_trans * glm::vec4(verts[inds[i + 2]], 1)),
             });
         }
 

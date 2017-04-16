@@ -51,11 +51,9 @@ set (PHYSICS_FILES
         physics/aabb.hpp
         physics/aabb_tri_intersect.cpp physics/bvh.hpp)
 
-set (TinyXML_FILES 3rd_party/tinyxml2/tinyxml2.cpp)
-
 set (TRANSFORM_FILES transform/transform.cpp transform/transform.hpp)
 
-set (COMMON_FILES ${LIGHT_FILES} ${GEOMETRY_FILES} ${TinyXML_FILES} ${PHYSICS_FILES} ${TRANSFORM_FILES}
+set (COMMON_FILES ${LIGHT_FILES} ${GEOMETRY_FILES} ${PHYSICS_FILES} ${TRANSFORM_FILES}
         camera.cpp camera.hpp
         transform.hpp
         scene.hpp scene.cpp
@@ -95,8 +93,6 @@ include(cotire)
 add_executable(ray ${SOURCE_FILES})
 add_executable(tests ${TEST_FILES})
 
-target_compile_definitions(ray PRIVATE)
-
 set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost REQUIRED COMPONENTS system thread filesystem program_options)
 find_package(PNG REQUIRED)
@@ -104,6 +100,8 @@ find_package(OpenEXR)
 find_package(Spdlog REQUIRED)
 find_package(Curses)
 find_package(assimp REQUIRED)
+find_package(TinyXML2 REQUIRED)
+find_package(GLM REQUIRED)
 
 set(TBB_ROOT_DIR "/home/fatih/tbb")
 set(TBB_USE_DEBUG_BUILD False)
@@ -115,9 +113,13 @@ target_include_directories(ray PUBLIC ${CMAKE_SOURCE_DIR})
 target_link_libraries(ray ${Boost_LIBRARIES})
 target_include_directories(ray PUBLIC ${Boost_INCLUDE_DIRS})
 
+message(STATUS ${TINYXML2_LIBRARIES})
+
+target_link_libraries(ray ${TINYXML2_LIBRARIES})
+target_include_directories(ray PUBLIC ${TINYXML2_INCLUDE_DIRS})
+
 target_include_directories(ray PUBLIC 3rd_party/gsl/include)
-target_include_directories(ray PUBLIC 3rd_party/glm)
-target_include_directories(ray PUBLIC 3rd_party/tinyxml2)
+target_include_directories(ray PUBLIC ${GLM_INCLUDE_DIRS})
 
 if (assimp_FOUND)
     message(STATUS "Found assimp")
@@ -176,8 +178,7 @@ target_link_libraries(tests ${Boost_LIBRARIES})
 target_include_directories(tests PUBLIC ${Boost_INCLUDE_DIRS})
 
 target_include_directories(tests PUBLIC 3rd_party/gsl/include)
-target_include_directories(tests PUBLIC 3rd_party/glm)
-target_include_directories(tests PUBLIC 3rd_party/tinyxml2)
+#target_include_directories(tests PUBLIC 3rd_party/glm)
 
 target_include_directories(tests PUBLIC ${PNG_INCLUDE_DIR})
 target_link_libraries(tests ${PNG_LIBRARY})

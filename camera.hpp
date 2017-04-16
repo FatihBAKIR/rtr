@@ -60,8 +60,10 @@ private:
     transformation t;
     im_plane plane;
     std::string m_output;
+    std::uint8_t sample_count;
+    std::uint8_t sample_sqrt;
 
-    friend void render_scanline(const camera& cam, glm::vec3 row_pos, int row, const glm::vec3&, const scene& scn,
+    friend void render_scanline(const camera& cam, glm::vec3 row_pos, int row, const glm::vec3&, const glm::vec3&, const scene& scn,
                                 typename render_config::render_traits<render_type>::image_type::view_t &v);
 };
 }

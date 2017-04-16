@@ -32,7 +32,7 @@ namespace shading
 
         if (ctx.hit.r.rtl == 0) return regular;
 
-        float refl_coeff;
+        float refl_coeff = 0;
         bool is_entering = glm::dot(-ctx.view_dir, ctx.hit.normal) < 0.f;
         if (is_entering)
         {

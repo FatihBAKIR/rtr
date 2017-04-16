@@ -17,6 +17,8 @@
 #include <tbb/task_scheduler_init.h>
 #include <tbb/task_group.h>
 #include <tbb/parallel_do.h>
+#include <random>
+
 #endif
 
 namespace rtr {
@@ -51,7 +53,7 @@ namespace rtr {
         glm::vec3 one_right;
     };
 
-    void render_scanline(const camera &cam, glm::vec3 row_pos, int row, const glm::vec3& one_right, const scene &scene,
+    void render_scanline(const camera &cam, glm::vec3 row_pos, int row, const glm::vec3& one_down, const glm::vec3& one_right, const scene &scene,
                          typename render_config::render_traits<camera::render_type>::image_type::view_t &v) {
         using namespace physics;
 
@@ -67,10 +69,24 @@ namespace rtr {
         pix_iterator end_i;
         end_i.pos = cam.plane.width;
 
+        std::vector<std::uint8_t> ms_ids(cam.sample_count);
+        std::iota(ms_ids.begin(), ms_ids.end(), 0);
+        std::random_shuffle(ms_ids.begin(), ms_ids.end(), std::default_random_engine{});
+
+        auto sample_right = one_right / cam.sample_sqrt;
+        auto sample_down = one_down / cam.sample_sqrt;
+
         auto render_pix = [&](const pix_iterator& i)
         {
+            auto get_sample_pos = [&](int ms_id) -> glm::vec3
+            {
+
+            };
+
             ray r(cam.t.position, glm::normalize(i.pix_pos - cam.t.position));
             r.rtl = scene.get_rtl();
+
+
 
             auto res = scene.ray_cast(r);
             if (res) {
@@ -126,7 +142,7 @@ namespace rtr {
 
         auto render_row = [&](const pix_iterator& row)
         {
-            render_scanline(*this, row.pix_pos, row.pos, one_right, scene, v);
+            render_scanline(*this, row.pix_pos, row.pos, one_down, one_right, scene, v);
         };
 
 #if RTR_TBB_SUPPORT && !RTR_NO_THREADING

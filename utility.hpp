@@ -50,3 +50,8 @@ template <typename ReturnType, typename... Lambdas>
 lambda_visitor<ReturnType, Lambdas...> make_lambda_visitor(Lambdas... lambdas) {
     return { lambdas... };
 }
+
+namespace rtr
+{
+    glm::vec3 random_point(const glm::vec3& around, float x_range, float y_range, float z_range);
+}

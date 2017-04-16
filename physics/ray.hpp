@@ -19,6 +19,7 @@ struct ray
     glm::vec3 dir;
     std::uint8_t rtl; // reflections to live, if 0, discard
     glm::vec3 m_inverse;
+    std::uint8_t ms_id; // multisampling id
 
     ray(const glm::vec3& origin, const glm::vec3& dir) : origin{origin}, dir{dir}, m_inverse{glm::vec3(1.f, 1.f, 1.f) / dir} {}
 
