@@ -40,6 +40,7 @@ namespace shading
             auto refl_ray = physics::ray(ctx.hit.position + ctx.hit.normal * 0.001f,
                 -ctx.view_dir + 2.f * cos_theta * ctx.hit.normal);
             refl_ray.rtl = ctx.hit.r.rtl - std::uint8_t(1);
+            refl_ray.ms_id = ctx.hit.r.ms_id;
 
             auto refl_hit = ctx.scn.ray_cast(refl_ray);
             if (refl_hit)
@@ -60,6 +61,8 @@ namespace shading
             auto new_ray = physics::ray(ctx.hit.position - ctx.hit.normal * 0.001f,
                     refract_ray(ctx.hit.normal, AirRefractionIndex / refract_index, ctx.view_dir));
             new_ray.rtl = ctx.hit.r.rtl - std::uint8_t(1);
+            new_ray.ms_id = ctx.hit.r.ms_id;
+
             auto hit = ctx.scn.ray_cast(new_ray);
             if (hit)
             {
@@ -83,6 +86,7 @@ namespace shading
                 auto refl_ray = physics::ray(ctx.hit.position - ctx.hit.normal * 0.001f,
                     -ctx.view_dir - 2.f * cos_theta * ctx.hit.normal);
                 refl_ray.rtl = ctx.hit.r.rtl - std::uint8_t(1);
+                refl_ray.ms_id = ctx.hit.r.ms_id;
 
                 auto refl_hit = ctx.scn.ray_cast(refl_ray);
                 if (refl_hit)
@@ -103,6 +107,8 @@ namespace shading
                 auto new_ray = physics::ray(ctx.hit.position + ctx.hit.normal * 0.001f,
                         refract_ray(-ctx.hit.normal, refract_index / AirRefractionIndex, ctx.view_dir));
                 new_ray.rtl = ctx.hit.r.rtl - std::uint8_t(1);
+                new_ray.ms_id = ctx.hit.r.ms_id;
+
                 auto hit = ctx.scn.ray_cast(new_ray);
                 if (hit)
                 {
@@ -121,6 +127,7 @@ namespace shading
                 auto reflect_dir = glm::normalize(2.f * glm::dot(ctx.view_dir, -ctx.hit.normal) * -ctx.hit.normal - ctx.view_dir);
                 auto reflect_ray = rtr::physics::ray(ctx.hit.position - ctx.hit.normal * 0.001f, reflect_dir);
                 reflect_ray.rtl = ctx.hit.r.rtl - std::uint8_t(1);
+                reflect_ray.ms_id = ctx.hit.r.ms_id;
                 auto hit = ctx.scn.ray_cast(reflect_ray);
                 if (hit)
                 {

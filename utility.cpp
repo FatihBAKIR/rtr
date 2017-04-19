@@ -17,16 +17,26 @@ namespace glm
 namespace rtr
 {
     static std::mt19937 rng;
-    glm::vec3 random_point(const glm::vec3& around, float x_range, float y_range, float z_range)
+    glm::vec3 random_point(const glm::vec3& around, const std::array<glm::vec3, 3>& a, const std::array<float, 3>& ranges)
     {
-        std::uniform_real_distribution<float> x_dist(-x_range, x_range);
-        std::uniform_real_distribution<float> y_dist(-y_range, y_range);
-        std::uniform_real_distribution<float> z_dist(-z_range, z_range);
+        std::uniform_real_distribution<float> x_dist(-ranges[0], ranges[0]);
+        std::uniform_real_distribution<float> y_dist(-ranges[1], ranges[1]);
+        std::uniform_real_distribution<float> z_dist(-ranges[2], ranges[2]);
         float x_deviate = x_dist(rng);
         float y_deviate = y_dist(rng);
         float z_deviate = z_dist(rng);
 
-        return around + glm::vec3(x_deviate, y_deviate, z_deviate);
+        return around + x_deviate * a[0] + y_deviate * a[1] + z_deviate * a[2];
+    }
+
+    glm::vec3 get_normal(const glm::vec3& dir)
+    {
+        auto res = glm::cross(dir, glm::vec3(1, 0, 0));
+        if (glm::length(res) <= 0.001)
+        {
+            res = glm::cross(dir, glm::vec3(0, 1, 0));
+        }
+        return res;
     }
 }
 

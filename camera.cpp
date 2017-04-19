@@ -81,22 +81,34 @@ namespace rtr {
         auto sample_right = one_right / (float)cam.sample_sqrt;
         auto sample_down = one_down / (float)cam.sample_sqrt;
 
+        auto cam_right = cam.t.right * cam.aperture_size / (float)cam.sample_sqrt;
+        auto cam_down = -cam.t.up * cam.aperture_size / (float)cam.sample_sqrt;
+
+        auto cam_w = cam.aperture_size / cam.sample_sqrt;
+
         auto sample_w = cam.plane.pix_w / cam.sample_sqrt;
         auto sample_h = cam.plane.pix_h / cam.sample_sqrt;
 
-        glm::vec3 cam_top_left = cam.t.position + (-one_right - one_down + sample_right + sample_down) * 0.5f;
+        glm::vec3 cam_top_left = cam.t.position + (-(cam.t.right * cam.aperture_size) + (cam.t.up * cam.aperture_size)
+                + cam_right + cam_down) * 0.5f;
+
+        std::array<glm::vec3, 3> cam_basis = {cam_right, cam_down, {}};
+        std::array<float, 3> cam_deviate = {cam_w / 2, cam_w / 2, 0};
 
         auto get_cam_pos = [&](int ms_id) -> glm::vec3
         {
             float x = ms_id % cam.sample_sqrt;
             float y = ms_id / cam.sample_sqrt;
 
-            return cam_top_left + sample_right * x + sample_down * y;
+            return cam_top_left + cam_right * x + cam_down * y;
         };
 
         auto render_pix = [&](const pix_iterator& i)
         {
             glm::vec3 top_left = i.pix_pos + (-one_right - one_down + sample_right + sample_down) * 0.5f;
+
+            std::array<glm::vec3, 3> pix_basis = {sample_right, sample_down, {}};
+            std::array<float, 3> pix_deviate = {sample_w / 2, sample_h / 2, 0};
 
             auto get_sample_pos = [&](int ms_id) -> glm::vec3
             {
@@ -108,12 +120,11 @@ namespace rtr {
 
             glm::vec3 fin_color = {};
             bool any_hit = false;
-            int tot_hit = 0;
 
             for (int i = 0; i < cam.sample_count; ++i)
             {
-                auto pos = rtr::random_point(get_cam_pos(cam_ids[i]), sample_w / 2, sample_h / 2, 0);
-                ray r(pos, glm::normalize(rtr::random_point(get_sample_pos(ms_ids[i]), sample_w / 2, sample_h / 2, 0) - pos));
+                auto pos = rtr::random_point(get_cam_pos(cam_ids[i]), cam_basis, cam_deviate);
+                ray r(pos, glm::normalize(rtr::random_point(get_sample_pos(ms_ids[i]), pix_basis, pix_deviate) - pos));
                 r.rtl = scene.get_rtl();
                 r.ms_id = i;
 
@@ -123,12 +134,11 @@ namespace rtr {
                     const auto &c = res->mat->shade(shading_ctx{scene, -r.dir, *res});
                     fin_color += c;
                     any_hit = true;
-                    tot_hit ++;
                 }
             }
 
             if (any_hit) {
-                const auto &c = camera::render_type::process(fin_color/ (float)tot_hit);
+                const auto &c = camera::render_type::process(fin_color/ (float)cam.sample_count);
                 v(i.pos, row) = pix_type(c_type(c[0]), c_type(c[1]), c_type(c[2]));
             } else {
                 const auto &c = camera::render_type::process(scene.m_background);
@@ -197,6 +207,28 @@ namespace rtr {
         logger->info("Rendering took {0} seconds", millis / 1000.f);
 
         return img;
+    }
+
+    void camera::set_aperture(float distance, float aperture_size)
+    {
+        this->aperture_size = aperture_size;
+        float ratio = distance / plane.dist;
+
+        std::cerr << "aperture camera: " << ratio << "\n";
+
+        plane.dist *= ratio;
+        plane.left *= ratio;
+        plane.right *= ratio;
+        plane.top *= ratio;
+        plane.bottom *= ratio;
+
+        plane.recalc();
+    }
+
+    void camera::set_samples(std::uint16_t samples)
+    {
+        sample_count = samples;
+        sample_sqrt = std::sqrt(samples);
     }
 }
 

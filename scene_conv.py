@@ -22,6 +22,10 @@ else:
     converted_root.append(copy.deepcopy(test_eps))
 
 for cam in root.iterfind("Camera"):
+    if not (cam.find("FocusDistance")) is None:
+        cam.attrib["type"] = "aperture"
+    else:
+        cam.attrib["type"] = "pinhole"
     converted_cameras.append(copy.deepcopy(cam))
 
 converted_root.append(copy.deepcopy(root.find("MaxRecursionDepth")))
@@ -45,6 +49,12 @@ for mat in root.find("Materials"):
     if not mat.find("RefractionIndex") is None:
         if not mat.find("RefractionIndex").text == "1" and not mat.find("Transparency") == "0 0 0":
             mat.attrib["shader"] = "glass"
+            new_mats.append(copy.deepcopy(mat))
+            continue
+
+    if not mat.find("Roughness") is None:
+        if not mat.find("Roughness").text == "0":
+            mat.attrib["shader"] = "metal"
             new_mats.append(copy.deepcopy(mat))
             continue
 

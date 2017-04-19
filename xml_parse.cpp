@@ -24,6 +24,7 @@
 #include <stack>
 #include <materials/mirror_material.h>
 #include <materials/glass.h>
+#include <materials/metal.hpp>
 
 namespace xml = tinyxml2;
 namespace {
@@ -57,7 +58,25 @@ namespace {
         iss >> width >> height;
 
         rtr::im_plane plane{left, right, top, bottom, dist, width, height,};
-        return {pos, up, gaze, plane, elem->FirstChildElement("ImageName")->GetText()};
+        rtr::camera cam{pos, up, gaze, plane, elem->FirstChildElement("ImageName")->GetText()};
+
+        if (elem->Attribute("type") == std::string("aperture"))
+        {
+            float focus_dist, aperture_size;
+            iss = std::istringstream(get_text("FocusDistance"));
+            iss >> focus_dist;
+            iss = std::istringstream(get_text("ApertureSize"));
+            iss >> aperture_size;
+            cam.set_aperture(focus_dist, aperture_size);
+        }
+
+        int sample_num;
+        iss = std::istringstream(get_text("NumSamples"));
+        iss >> sample_num;
+
+        cam.set_samples(sample_num);
+
+        return cam;
     }
 
     glm::mat4 parse_transform(const xml::XMLElement *elem, const std::map<std::string, glm::mat4> &ts) {
@@ -181,6 +200,25 @@ namespace {
         return {pos, inte};
     }
 
+    rtr::lights::area_light read_area(const xml::XMLElement *elem) {
+        glm::vec3 pos, inte, e1, e2;
+        int samples = 6;
+
+        std::istringstream iss(elem->FirstChildElement("Position")->GetText());
+        iss >> pos[0] >> pos[1] >> pos[2];
+
+        iss = std::istringstream(elem->FirstChildElement("Intensity")->GetText());
+        iss >> inte[0] >> inte[1] >> inte[2];
+
+        iss = std::istringstream(elem->FirstChildElement("EdgeVector1")->GetText());
+        iss >> e1[0] >> e1[1] >> e1[2];
+
+        iss = std::istringstream(elem->FirstChildElement("EdgeVector2")->GetText());
+        iss >> e2[0] >> e2[1] >> e2[2];
+
+        return {pos, inte, e1, e2, samples};
+    }
+
     rtr::lights::spot_light read_spot(const xml::XMLElement* elem)
     {
         glm::vec3 pos, inte, dir;
@@ -209,7 +247,9 @@ namespace {
                 sc.insert(read_point(l));
             } else if (l->Name() == std::string("SpotLight")) {
                 sc.insert(read_spot(l));
-            }  else {
+            } else if (l->Name() == std::string("AreaLight")) {
+                sc.insert(read_area(l));
+            } else {
                 abort();
             }
         }
@@ -256,6 +296,23 @@ namespace {
         return { base_mat, ref };
     }
 
+    rtr::shading::metal read_metal_mat(const xml::XMLElement* elem)
+    {
+        auto get_text = [&](const char *name) {
+            return elem->FirstChildElement(name)->GetText();
+        };
+
+        auto base_mat = read_rt_material(elem);
+
+        glm::vec3 ref;
+        auto iss = std::istringstream(get_text("MirrorReflectance"));
+        iss >> ref[0] >> ref[1] >> ref[2];
+
+        float r = elem->FirstChildElement("Roughness")->FloatText();
+
+        return { base_mat, ref, r };
+    }
+
     rtr::shading::glass read_glass_mat(const xml::XMLElement* elem)
     {
         float index;
@@ -263,7 +320,6 @@ namespace {
         auto get_text = [&](const char *name) {
             return elem->FirstChildElement(name)->GetText();
         };
-
 
         glm::vec3 ref;
         auto iss = std::istringstream(get_text("Transparency"));
@@ -293,6 +349,11 @@ namespace {
         } else if (elem->Attribute("shader") == std::string("glass"))
         {
             auto ret = new rtr::shading::glass(read_glass_mat(elem));
+            ret->id = elem->Int64Attribute("id");
+            return ret;
+        } else if (elem->Attribute("shader") == std::string("metal"))
+        {
+            auto ret = new rtr::shading::metal(read_metal_mat(elem));
             ret->id = elem->Int64Attribute("id");
             return ret;
         }

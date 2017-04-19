@@ -30,6 +30,11 @@ struct im_plane
     im_plane(float left, float right, float top, float bottom, float dist, long im_w, long im_h)
         : left(left), right(right), top(top), bottom(bottom), dist(dist), width(im_w), height(im_h)
     {
+        recalc();
+    }
+
+    void recalc()
+    {
         pix_w = (right - left) / width;
         pix_h = (top - bottom) / height;
     }
@@ -57,6 +62,11 @@ public:
     {
         return m_output;
     }
+
+    void set_aperture(float distance, float aperture_size);
+
+    void set_samples(std::uint16_t samples);
+
 private:
     std::atomic<uint64_t>* rendered;
     transformation t;
@@ -64,6 +74,8 @@ private:
     std::string m_output;
     std::uint8_t sample_count = 100;
     std::uint8_t sample_sqrt = 10;
+
+    float aperture_size = 0;
 
     friend void render_scanline(const camera& cam, glm::vec3 row_pos, int row, const glm::vec3&, const glm::vec3&, const scene& scn,
                                 typename render_config::render_traits<render_type>::image_type::view_t &v);

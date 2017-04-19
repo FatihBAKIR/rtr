@@ -61,7 +61,7 @@ boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::
     boost::optional<shape_variant> cur_hit;
     float cur_param = std::numeric_limits<float>::infinity();
 
-    traverse_octree(part, ray, [&](auto* shape)
+    auto shape_handler = [&](auto* shape)
     {
         auto p = shape->get_parameter(ray);
         if (p)
@@ -73,7 +73,14 @@ boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::
                 cur_hit = std::make_tuple(shape, param.data);
             }
         }
-    });
+    };
+
+    traverse_octree(part, ray, shape_handler);
+
+    constexpr auto index = png::index_of_t<std::decay_t<geometry::sphere>, shape_list>();
+    auto& v = boost::fusion::at_c<index>(shapes);
+
+    std::for_each(v.begin(), v.end(), [&shape_handler](auto& s) {shape_handler(&s);});
 
     if (!cur_hit)
     {

@@ -53,5 +53,6 @@ lambda_visitor<ReturnType, Lambdas...> make_lambda_visitor(Lambdas... lambdas) {
 
 namespace rtr
 {
-    glm::vec3 random_point(const glm::vec3& around, float x_range, float y_range, float z_range);
+    glm::vec3 random_point(const glm::vec3& around, const std::array<glm::vec3, 3>& a, const std::array<float, 3>& ranges);
+    glm::vec3 get_normal(const glm::vec3& dir);
 }
