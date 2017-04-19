@@ -13,6 +13,8 @@
 #include <spdlog/spdlog.h>
 #endif
 
+#include <utility.hpp>
+
 #if RTR_TBB_SUPPORT
 #include <tbb/task_scheduler_init.h>
 #include <tbb/task_group.h>
@@ -69,33 +71,71 @@ namespace rtr {
         pix_iterator end_i;
         end_i.pos = cam.plane.width;
 
-        std::vector<std::uint8_t> ms_ids(cam.sample_count);
+        std::vector<std::uint16_t> ms_ids(cam.sample_count);
         std::iota(ms_ids.begin(), ms_ids.end(), 0);
-        std::random_shuffle(ms_ids.begin(), ms_ids.end(), std::default_random_engine{});
+        auto cam_ids = ms_ids;
+        auto rng = std::default_random_engine{};
+        std::shuffle(ms_ids.begin(), ms_ids.end(), rng);
+        std::shuffle(cam_ids.begin(), cam_ids.end(), rng);
 
-        auto sample_right = one_right / cam.sample_sqrt;
-        auto sample_down = one_down / cam.sample_sqrt;
+        auto sample_right = one_right / (float)cam.sample_sqrt;
+        auto sample_down = one_down / (float)cam.sample_sqrt;
+
+        auto sample_w = cam.plane.pix_w / cam.sample_sqrt;
+        auto sample_h = cam.plane.pix_h / cam.sample_sqrt;
+
+        glm::vec3 cam_top_left = cam.t.position + (-one_right - one_down + sample_right + sample_down) * 0.5f;
+
+        auto get_cam_pos = [&](int ms_id) -> glm::vec3
+        {
+            float x = ms_id % cam.sample_sqrt;
+            float y = ms_id / cam.sample_sqrt;
+
+            return cam_top_left + sample_right * x + sample_down * y;
+        };
 
         auto render_pix = [&](const pix_iterator& i)
         {
+            glm::vec3 top_left = i.pix_pos + (-one_right - one_down + sample_right + sample_down) * 0.5f;
+
             auto get_sample_pos = [&](int ms_id) -> glm::vec3
             {
+                float x = ms_id % cam.sample_sqrt;
+                float y = ms_id / cam.sample_sqrt;
 
+                return top_left + sample_right * x + sample_down * y;
             };
 
-            ray r(cam.t.position, glm::normalize(i.pix_pos - cam.t.position));
-            r.rtl = scene.get_rtl();
+            glm::vec3 fin_color = {};
+            bool any_hit = false;
+            int tot_hit = 0;
 
+            for (int i = 0; i < cam.sample_count; ++i)
+            {
+                auto pos = rtr::random_point(get_cam_pos(cam_ids[i]), sample_w / 2, sample_h / 2, 0);
+                ray r(pos, glm::normalize(rtr::random_point(get_sample_pos(ms_ids[i]), sample_w / 2, sample_h / 2, 0) - pos));
+                r.rtl = scene.get_rtl();
+                r.ms_id = i;
 
+                auto res = scene.ray_cast(r);
+                if (res)
+                {
+                    const auto &c = res->mat->shade(shading_ctx{scene, -r.dir, *res});
+                    fin_color += c;
+                    any_hit = true;
+                    tot_hit ++;
+                }
+            }
 
-            auto res = scene.ray_cast(r);
-            if (res) {
-                const auto &c = camera::render_type::process(res->mat->shade(shading_ctx{scene, -r.dir, *res}));
+            if (any_hit) {
+                const auto &c = camera::render_type::process(fin_color/ (float)tot_hit);
                 v(i.pos, row) = pix_type(c_type(c[0]), c_type(c[1]), c_type(c[2]));
             } else {
                 const auto &c = camera::render_type::process(scene.m_background);
                 v(i.pos, row) = pix_type(c_type(c[0]), c_type(c[1]), c_type(c[2]));
             }
+
+            (*cam.rendered)++;
         };
 
         std::for_each(beg_i, end_i, render_pix);

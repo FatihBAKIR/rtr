@@ -47,6 +47,7 @@ public:
     camera(const glm::vec3& pos, const glm::vec3& up, const glm::vec3 & gaze, const im_plane& p, const std::string& output) :
             t{pos, glm::normalize(up), glm::normalize(-gaze), glm::normalize(glm::cross(t.up, t.forward))}, plane{p}, m_output{output} {
         t.up = glm::normalize(glm::cross(t.right, -t.forward));
+        rendered = new std::atomic<uint64_t>;
     }
 
     typename render_config::render_traits<render_type>::image_type
@@ -57,11 +58,12 @@ public:
         return m_output;
     }
 private:
+    std::atomic<uint64_t>* rendered;
     transformation t;
     im_plane plane;
     std::string m_output;
-    std::uint8_t sample_count;
-    std::uint8_t sample_sqrt;
+    std::uint8_t sample_count = 100;
+    std::uint8_t sample_sqrt = 10;
 
     friend void render_scanline(const camera& cam, glm::vec3 row_pos, int row, const glm::vec3&, const glm::vec3&, const scene& scn,
                                 typename render_config::render_traits<render_type>::image_type::view_t &v);

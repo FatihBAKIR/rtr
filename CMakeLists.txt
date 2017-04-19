@@ -39,7 +39,7 @@ if (CMAKE_C_COMPILER_ID MATCHES "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -static-libgcc")
 endif()
 
-set (LIGHT_FILES lights/point_light.hpp lights/ambient_light.hpp)
+set (LIGHT_FILES lights/point_light.hpp lights/ambient_light.hpp lights/spot_light.hpp)
 set (GEOMETRY_FILES
         geometry/mesh.hpp geometry/mesh.cpp
         geometry/sphere.hpp geometry/sphere.cpp
@@ -75,7 +75,7 @@ set (GIL_HDR_FILES gil_extension/exr/detail/color_space_traits.cpp)
 set (TEST_FILES ${GIL_HDR_FILES} ${COMMON_FILES} tests/physics/collisions.cpp tests/tests_main.cpp tests/physics/bvh_tests.cpp)
 
 set (SOURCE_FILES ${GIL_HDR_FILES} ${COMMON_FILES} main.cpp materials/toon_shading.cpp materials/toon_shading.hpp
-        materials/mirror_material.cpp materials/mirror_material.h materials/glass.cpp materials/glass.h)
+        materials/mirror_material.cpp materials/mirror_material.h materials/glass.cpp materials/glass.h lights/spot_light.hpp)
 
 if(MSVC)
     if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")

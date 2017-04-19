@@ -181,13 +181,35 @@ namespace {
         return {pos, inte};
     }
 
+    rtr::lights::spot_light read_spot(const xml::XMLElement* elem)
+    {
+        glm::vec3 pos, inte, dir;
+        float perfect, fall_off;
+
+        std::istringstream iss(elem->FirstChildElement("Position")->GetText());
+        iss >> pos[0] >> pos[1] >> pos[2];
+
+        iss = std::istringstream(elem->FirstChildElement("Intensity")->GetText());
+        iss >> inte[0] >> inte[1] >> inte[2];
+
+        iss = std::istringstream(elem->FirstChildElement("Direction")->GetText());
+        iss >> dir[0] >> dir[1] >> dir[2];
+
+        fall_off = elem->FirstChildElement("FalloffAngle")->FloatText();
+        perfect = elem->FirstChildElement("CoverageAngle")->FloatText();
+
+        return {pos, inte, glm::normalize(dir), perfect, fall_off};
+    }
+
     void read_lights(const xml::XMLElement *elem, rtr::scene &sc) {
         for (auto l = elem->FirstChildElement(); l; l = l->NextSiblingElement()) {
             if (l->Name() == std::string("AmbientLight")) {
                 sc.insert(read_ambient(l));
             } else if (l->Name() == std::string("PointLight")) {
                 sc.insert(read_point(l));
-            } else {
+            } else if (l->Name() == std::string("SpotLight")) {
+                sc.insert(read_spot(l));
+            }  else {
                 abort();
             }
         }

@@ -20,7 +20,7 @@ namespace rtr
         glm::vec3 specular = {0,0,0};
 
         auto light_handler = make_lambda_visitor<void>(
-            [&](const lights::point_light* pl)
+            [&](const auto* pl)
             {
                 auto& normal = ctx.hit.normal;
                 auto point_to_light = pl->get_position() - ctx.hit.position;
