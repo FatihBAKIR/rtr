@@ -1,6 +1,7 @@
 import sys
 import copy
 import xml.etree.ElementTree as etree
+from enum import Enum
 
 tree = etree.parse(sys.argv[1])
 root = tree.getroot()
@@ -41,13 +42,55 @@ else:
 
 new_mats = etree.SubElement(converted_root, "Materials")
 
+class texture:
+    decal_mode = ""
+    id = 0
+
+    @abstractmethod
+    def to_xml(self):
+        raise Exception("don't")
+
+class perlin_types(Enum):
+    Vein = 1
+    Patch = 2
+
+class perlin_data(texture):
+    appearance = perlin_types.Vein
+    scale_factor = 1
+
+class image_data(texture):
+    path = ""
+
+def parse_texture(elem):
+    res = texture()
+
+    if elem.find("ImageName").text == "perlin":
+        res = perlin_data()
+        res.appearance = perlin_types.Vein if elem.find("Appearance").text == "vein" else perlin_types.Patch
+        res.scale_factor = float(elem.find("ScalingFactor").text)
+    else:
+        res = image_data()
+        res.path = elem.find("ImageName").text
+
+    res.decal_mode = elem.find("DecalMode").text
+    res.id = int(elem.attrib["id"])
+    return res
+
+textures = []
+
+if not root.find("Textures") is None:
+    for tex in root.find("Textures"):
+        textures.append(parse_texture(tex))
+
+print textures
+
 for mat in root.find("Materials"):
     if "shader" in mat.attrib:
         new_mats.append(copy.deepcopy(mat))
         continue
 
-    if not mat.find("RefractionIndex") is None:
-        if not mat.find("RefractionIndex").text == "1" and not mat.find("Transparency") == "0 0 0":
+    if not mat.find("refractionindex") is None:
+        if not mat.find("refractionindex").text == "1" and not mat.find("transparency") == "0 0 0":
             mat.attrib["shader"] = "glass"
             new_mats.append(copy.deepcopy(mat))
             continue
@@ -203,4 +246,4 @@ for tri in objects.iterfind("Triangle"):
 
 converted_root.attrib["version"] = "1"
 
-print etree.tostring(converted_root)
+#print etree.tostring(converted_root)
