@@ -12,12 +12,15 @@ namespace rtr
 {
     class rt_mat : public material
     {
-    public:
-        glm::vec3 diffuse;
+        const texturing::sampler2d* diffuse_sampler;
         glm::vec3 specular;
         glm::vec3 ambient;
 
         float phong;
+
+    public:
+        rt_mat(const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& ambient, float phong);
+        rt_mat(const texturing::sampler2d* diff_sampler, const glm::vec3& specular, const glm::vec3& ambient, float phong);
 
         glm::vec3 shade(const shading_ctx& ctx) const override final;
     };

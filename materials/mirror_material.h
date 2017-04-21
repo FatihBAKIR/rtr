@@ -10,13 +10,13 @@
 namespace rtr {
     namespace shading {
         class mirror_material : public material {
-            rt_mat base;
+            material* base;
 
             glm::vec3 reflectance;
 
         public:
             mirror_material(const rt_mat& m, const glm::vec3& refl) :
-                base(m), reflectance(refl) {}
+                base(new rt_mat(m)), reflectance(refl) {}
 
             glm::vec3 shade(const shading_ctx&) const override;
         };

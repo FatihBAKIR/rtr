@@ -9,6 +9,7 @@
 #include <iostream>
 #include <utility.hpp>
 #include <physics/aabb.hpp>
+#include <boost/math/constants/constants.hpp>
 
 constexpr bool SphereInsideCollision = true;
 
@@ -57,12 +58,16 @@ namespace geometry
 
         glm::vec3 world_pos = glm::vec3(transform * glm::vec4(pos, 1));
 
-        return { {parameter, {world_pos, normal}} };
+        pos -= this->get_center();
+        glm::vec2 uv = { std::atan2(pos.z, pos.x) / (2 * boost::math::constants::pi<float>()),
+                         std::acos(pos.y / this->radius) / boost::math::constants::pi<float>() };
+
+        return { {parameter, {world_pos, normal, uv}} };
     }
 
     physics::ray_hit sphere::intersect(const physics::ray& ray, float parameter, const data_t& data) const
     {
-        return physics::ray_hit{ this, ray, mat, data.pos, data.normal, parameter };
+        return physics::ray_hit{ this, ray, mat, data.pos, data.normal, parameter, data.uv };
     }
 
     physics::aabb sphere::bounding_box() const {

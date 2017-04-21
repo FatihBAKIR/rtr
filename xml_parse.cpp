@@ -26,6 +26,12 @@
 #include <materials/glass.h>
 #include <materials/metal.hpp>
 
+#include <boost/gil/extension/io/jpeg_io.hpp>
+#include <boost/gil/extension/io/png_io.hpp>
+#include <boost/gil/image_view.hpp>
+
+#include <texturing/tex2d.hpp>
+
 namespace xml = tinyxml2;
 namespace {
 
@@ -181,6 +187,19 @@ namespace {
         }
     }
 
+    rtr::texturing::sampler2d* read_image(const xml::XMLElement* elem)
+    {
+        boost::gil::rgb8_image_t im;
+        auto p = elem->FirstChildElement("Path")->GetText();
+        float scaling = elem->FirstChildElement("ScalingFactor")->FloatText(255);
+        boost::gil::jpeg_read_image(p, im);
+        auto view = boost::gil::view (im);
+
+        assert(view.is_1d_traversable());
+
+        return new rtr::texturing::tex2d<uint8_t, 3>((const uint8_t*)(&view[0][0]), view.width(), view.height(), scaling);
+    }
+
     rtr::lights::ambient_light read_ambient(const xml::XMLElement *elem) {
         std::istringstream iss(elem->GetText());
         glm::vec3 color;
@@ -255,39 +274,42 @@ namespace {
         }
     }
 
-    rtr::rt_mat read_rt_material(const xml::XMLElement *elem) {
+    rtr::rt_mat read_rt_material(const xml::XMLElement *elem, const std::map<uint16_t, rtr::texturing::sampler2d*> texs) {
         auto get_text = [&](const char *name) {
             return elem->FirstChildElement(name)->GetText();
         };
 
-        rtr::rt_mat m;
-
-        m.id = elem->Int64Attribute("id");
-
+        glm::vec3 diffuse, specular, ambient;
         std::istringstream iss(get_text("AmbientReflectance"));
-        iss >> m.ambient[0] >> m.ambient[1] >> m.ambient[2];
-
-        iss = std::istringstream(get_text("DiffuseReflectance"));
-        iss >> m.diffuse[0] >> m.diffuse[1] >> m.diffuse[2];
+        iss >> ambient[0] >> ambient[1] >> ambient[2];
 
         iss = std::istringstream(get_text("SpecularReflectance"));
-        iss >> m.specular[0] >> m.specular[1] >> m.specular[2];
+        iss >> specular[0] >> specular[1] >> specular[2];
 
-        if (elem->FirstChildElement("PhongExponent"))
-        m.phong = elem->FirstChildElement("PhongExponent")->FloatText();
+        auto phong = elem->FirstChildElement("PhongExponent")->FloatText(0);
+
+
+        auto dif_elem = elem->FirstChildElement("DiffuseReflectance");
+        int id;
+        if ((id = dif_elem->IntAttribute("tex_id", -1)) != -1)
+        {
+            return {texs.find(id)->second, specular, ambient, phong};
+        }
         else
-            m.phong = 0;
-
-        return m;
+        {
+            iss = std::istringstream(get_text("DiffuseReflectance"));
+            iss >> diffuse[0] >> diffuse[1] >> diffuse[2];
+            return {diffuse, specular, ambient, phong};
+        }
     }
 
-    rtr::shading::mirror_material read_mirror_mat(const xml::XMLElement* elem)
+    rtr::shading::mirror_material read_mirror_mat(const xml::XMLElement* elem, const std::map<uint16_t, rtr::texturing::sampler2d*> texs)
     {
         auto get_text = [&](const char *name) {
             return elem->FirstChildElement(name)->GetText();
         };
 
-        auto base_mat = read_rt_material(elem);
+        auto base_mat = read_rt_material(elem, texs);
 
         glm::vec3 ref;
         auto iss = std::istringstream(get_text("MirrorReflectance"));
@@ -296,13 +318,13 @@ namespace {
         return { base_mat, ref };
     }
 
-    rtr::shading::metal read_metal_mat(const xml::XMLElement* elem)
+    rtr::shading::metal read_metal_mat(const xml::XMLElement* elem, const std::map<uint16_t, rtr::texturing::sampler2d*> texs)
     {
         auto get_text = [&](const char *name) {
             return elem->FirstChildElement(name)->GetText();
         };
 
-        auto base_mat = read_rt_material(elem);
+        auto base_mat = read_rt_material(elem, texs);
 
         glm::vec3 ref;
         auto iss = std::istringstream(get_text("MirrorReflectance"));
@@ -330,9 +352,11 @@ namespace {
         return { ref, index };
     }
 
-    rtr::material *read_material(const xml::XMLElement *elem, const std::unordered_map<long, rtr::material *> &mats) {
+    rtr::material *read_material(const xml::XMLElement *elem, const std::unordered_map<long, rtr::material *> &mats, const std::map<uint16_t, rtr::texturing::sampler2d*> samplers) {
         if (elem->Attribute("shader") == nullptr || elem->Attribute("shader") == std::string("ceng795")) {
-            return new rtr::rt_mat(read_rt_material(elem));
+            auto m = new rtr::rt_mat(read_rt_material(elem, samplers));
+            m->id = elem->Int64Attribute("id");
+            return m;
         } else if (elem->Attribute("shader") == std::string("normal_mat")) {
             auto m = new rtr::normal_mat;
             m->id = elem->Int64Attribute("id");
@@ -343,7 +367,7 @@ namespace {
             return m;
         } else if (elem->Attribute("shader") == std::string("mirror"))
         {
-            auto ret = new rtr::shading::mirror_material(read_mirror_mat(elem));
+            auto ret = new rtr::shading::mirror_material(read_mirror_mat(elem, samplers));
             ret->id = elem->Int64Attribute("id");
             return ret;
         } else if (elem->Attribute("shader") == std::string("glass"))
@@ -353,7 +377,7 @@ namespace {
             return ret;
         } else if (elem->Attribute("shader") == std::string("metal"))
         {
-            auto ret = new rtr::shading::metal(read_metal_mat(elem));
+            auto ret = new rtr::shading::metal(read_metal_mat(elem, samplers));
             ret->id = elem->Int64Attribute("id");
             return ret;
         }
@@ -442,13 +466,6 @@ namespace rtr {
                 cams.push_back(read_camera(c));
             }
 
-            std::unordered_map<long, rtr::material *> mats;
-            auto materials = root->FirstChildElement("Materials");
-            for (auto c = materials->FirstChildElement(); c; c = c->NextSiblingElement()) {
-                auto m = read_material(c, mats);
-                mats.emplace(m->id, m);
-            }
-
             std::map<std::string, glm::mat4> transformations;
             auto transs = root->FirstChildElement("Transformations");
             for (auto t = transs->FirstChildElement(); t; t = t->NextSiblingElement()) {
@@ -467,6 +484,19 @@ namespace rtr {
                 }
             }
 
+            std::map<uint16_t, rtr::texturing::sampler2d*> textures;
+            auto textures_elem = root->FirstChildElement("Textures");
+            for (auto t = textures_elem->FirstChildElement(); t; t = t->NextSiblingElement())
+            {
+                textures.emplace(t->Int64Attribute("id"), read_image(t));
+            }
+
+            std::unordered_map<long, rtr::material *> mats;
+            auto materials = root->FirstChildElement("Materials");
+            for (auto c = materials->FirstChildElement(); c; c = c->NextSiblingElement()) {
+                auto m = read_material(c, mats, textures);
+                mats.emplace(m->id, m);
+            }
             glm::vec3 center, extent;
             iss = std::istringstream(root->Attribute("center"));
             iss >> center[0] >> center[1] >> center[2];

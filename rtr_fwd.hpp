@@ -46,6 +46,12 @@ namespace rtr {
         class bvh;
     }
 
+    namespace texturing
+    {
+        class sampler2d;
+        template <class, int> class tex2d;
+    }
+
     namespace lights
     {
         class ambient_light;

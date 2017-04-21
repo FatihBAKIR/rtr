@@ -10,7 +10,7 @@ namespace rtr
     namespace shading
     {
         glm::vec3 mirror_material::shade(const shading_ctx & ctx) const {
-            auto regular = base.shade(ctx);
+            auto regular = base->shade(ctx);
 
             if (ctx.hit.r.rtl != 0)
             {

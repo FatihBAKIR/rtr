@@ -38,6 +38,8 @@ struct ray_hit
     glm::vec3 position;
     glm::vec3 normal;
     float parameter;
+
+    glm::vec2 uv = {};
 };
 }
 }

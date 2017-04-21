@@ -46,7 +46,6 @@ class texture:
     decal_mode = ""
     id = 0
 
-    @abstractmethod
     def to_xml(self):
         raise Exception("don't")
 
@@ -60,6 +59,7 @@ class perlin_data(texture):
 
 class image_data(texture):
     path = ""
+    scaling = 1
 
 def parse_texture(elem):
     res = texture()
@@ -81,8 +81,6 @@ textures = []
 if not root.find("Textures") is None:
     for tex in root.find("Textures"):
         textures.append(parse_texture(tex))
-
-print textures
 
 for mat in root.find("Materials"):
     if "shader" in mat.attrib:
@@ -246,4 +244,4 @@ for tri in objects.iterfind("Triangle"):
 
 converted_root.attrib["version"] = "1"
 
-#print etree.tostring(converted_root)
+print etree.tostring(converted_root)

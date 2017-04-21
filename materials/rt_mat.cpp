@@ -9,6 +9,8 @@
 #include <utility.hpp>
 #include <physics/ray.hpp>
 #include <materials/shading_ctx.hpp>
+#include <texturing/sampler.hpp>
+#include <texturing/tex2d.hpp>
 
 namespace rtr
 {
@@ -64,9 +66,34 @@ namespace rtr
 
         scene.for_lights(light_handler);
 
-        diffuse *= this->diffuse;
+        diffuse *= this->diffuse_sampler->sample(ctx.hit.uv);
         specular *= this->specular;
 
         return ambient + diffuse + specular;
+    }
+
+    rt_mat::rt_mat(const texturing::sampler2d* diff_sampler, const glm::vec3& specular, const glm::vec3& ambient,
+            float phong)
+    {
+        this->diffuse_sampler = diff_sampler;
+        this->specular = specular;
+        this->ambient = ambient;
+        this->phong = phong;
+    }
+
+    rt_mat::rt_mat(const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& ambient, float phong)
+    {
+        float test[] = {
+            diffuse.r,
+            diffuse.g,
+            diffuse.b
+        };
+        auto diffuse_sampler = new texturing::tex2d<float, 3>(test, 1, 1);
+        diffuse_sampler->set_sampling_mode(texturing::sampling_mode::nearest_neighbour);
+        this->diffuse_sampler = diffuse_sampler;
+
+        this->specular = specular;
+        this->ambient = ambient;
+        this->phong = phong;
     }
 }

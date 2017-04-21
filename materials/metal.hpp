@@ -12,14 +12,14 @@ namespace rtr {
 namespace shading {
     class metal : public material
     {
-        rt_mat base;
+        material* base;
 
         float rough;
         glm::vec3 reflectance;
 
     public:
         metal(const rt_mat& m, const glm::vec3& refl, float roughness)
-                : base(m), reflectance(refl), rough(roughness)
+                : base(new rt_mat(m)), reflectance(refl), rough(roughness)
         { }
 
         glm::vec3 shade(const shading_ctx&) const override;

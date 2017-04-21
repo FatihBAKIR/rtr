@@ -1,0 +1,31 @@
+//
+// Created by fatih on 4/21/17.
+//
+
+#include <texturing/sampler.hpp>
+#include <memory>
+
+namespace rtr
+{
+namespace texturing
+{
+    template <class channel_t, int num_channels>
+    class tex2d : public sampler2d
+    {
+        std::unique_ptr<channel_t[]> m_data;
+        int w, h;
+        float scaling = 1;
+
+        sampling_mode mode = sampling_mode::nearest_neighbour;
+
+        glm::vec3 sample(int x, int y) const;
+
+    public:
+        tex2d(const channel_t*, int width, int height, float scaling = 1);
+        ~tex2d() override;
+
+        glm::vec3 sample(const glm::vec2& uv) const override;
+        void set_sampling_mode(sampling_mode mode) override;
+    };
+}
+}

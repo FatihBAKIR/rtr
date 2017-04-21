@@ -75,7 +75,7 @@ set (GIL_HDR_FILES gil_extension/exr/detail/color_space_traits.cpp)
 set (TEST_FILES ${GIL_HDR_FILES} ${COMMON_FILES} tests/physics/collisions.cpp tests/tests_main.cpp tests/physics/bvh_tests.cpp)
 
 set (SOURCE_FILES ${GIL_HDR_FILES} ${COMMON_FILES} main.cpp materials/toon_shading.cpp materials/toon_shading.hpp
-        materials/mirror_material.cpp materials/mirror_material.h materials/glass.cpp materials/glass.h lights/spot_light.hpp lights/area_light.hpp materials/metal.cpp materials/metal.hpp)
+        materials/mirror_material.cpp materials/mirror_material.h materials/glass.cpp materials/glass.h lights/spot_light.hpp lights/area_light.hpp materials/metal.cpp materials/metal.hpp texturing/sampler.cpp texturing/sampler.hpp texturing/tex2d.cpp texturing/tex2d.hpp)
 
 if(MSVC)
     if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
@@ -96,6 +96,7 @@ add_executable(tests ${TEST_FILES})
 set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost REQUIRED COMPONENTS system thread filesystem program_options)
 find_package(PNG REQUIRED)
+find_package(JPEG REQUIRED)
 find_package(OpenEXR)
 find_package(Spdlog REQUIRED)
 find_package(Curses)
@@ -137,6 +138,15 @@ if (PNG_FOUND)
 
     target_include_directories(ray PUBLIC ${PNG_INCLUDE_DIR})
     target_link_libraries(ray ${PNG_LIBRARY})
+endif()
+
+if (JPEG_FOUND)
+    message(STATUS "Found JPEG, Building JPEG Texture Support")
+
+    target_compile_definitions(ray PRIVATE RTR_JPEG_SUPPORT=1)
+
+    target_include_directories(ray PUBLIC ${JPEG_INCLUDE_DIR})
+    target_link_libraries(ray ${JPEG_LIBRARY})
 endif()
 
 if (OpenEXR_FOUND)
