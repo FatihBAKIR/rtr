@@ -42,26 +42,12 @@ else:
 
 new_mats = etree.SubElement(converted_root, "Materials")
 
-class decal_modes(Enum):
-    BlendCoeff = 0
-    ReplaceCoeff = 1
-    ReplaceComplete = 2
-
-def get_decal_mode(text):
-    if text == "replace_kd":
-        return decal_modes.ReplaceCoeff
-    if text == "blend_kd":
-        return decal_modes.BlendCoeff
-    if text == "replace_all":
-        return decal_modes.ReplaceComplete
-
-
-class texture(object):
-    decal_mode = decal_modes.ReplaceComplete
+class texture:
+    decal_mode = ""
     id = 0
 
-    def to_xml(self, elem):
-        elem.attrib["id"] = str(self.id)
+    def to_xml(self):
+        raise Exception("don't")
 
 class perlin_types(Enum):
     Vein = 1
@@ -71,26 +57,8 @@ class perlin_data(texture):
     appearance = perlin_types.Vein
     scale_factor = 1
 
-    def to_xml(self, elem):
-        elem = etree.Element("Perlin")
-
-        super(perlin_data, self).to_xml(elem)
-        etree.SubElement(elem, "Appearance").text = str(self.appearance)
-
-        return elem
-
 class image_data(texture):
     path = ""
-    scaling = 1
-
-    def to_xml(self, elem):
-        elem = etree.Element("Image")
-
-        super(image_data, self).to_xml(elem)
-        etree.SubElement(elem, "Path").text = self.path
-        etree.SubElement(elem, "Scaling").text = str(self.scaling)
-
-        return elem
 
 def parse_texture(elem):
     res = texture()
@@ -102,26 +70,18 @@ def parse_texture(elem):
     else:
         res = image_data()
         res.path = elem.find("ImageName").text
-        res.scaling = 255
 
-    res.decal_mode = get_decal_mode(elem.find("DecalMode").text)
+    res.decal_mode = elem.find("DecalMode").text
     res.id = int(elem.attrib["id"])
     return res
 
-textures = {}
+textures = []
 
 if not root.find("Textures") is None:
     for tex in root.find("Textures"):
-        t = parse_texture(tex)
-        textures[t.id] = t
+        textures.append(parse_texture(tex))
 
-new_textures = etree.SubElement(converted_root, "Textures")
-
-for tex in textures:
-    new_textures.append(textures[tex].to_xml(None))
-
-materials = {}
-custom_mat_id = 1000
+print textures
 
 for mat in root.find("Materials"):
     if "shader" in mat.attrib:
@@ -147,8 +107,7 @@ for mat in root.find("Materials"):
             continue
 
     mat.attrib["shader"] = "ceng795"
-
-    materials[int(mat.attrib["id"])] = copy.deepcopy(mat)
+    new_mats.append(copy.deepcopy(mat))
 
 def group(lst, n):
     return zip(*[lst[i::n] for i in range(n)])
@@ -156,12 +115,6 @@ def group(lst, n):
 vertexdata_text = root.find("VertexData").text
 vertex_pos = [float(x) for x in vertexdata_text.split()]
 vertices = group(vertex_pos, 3)
-
-uvs = None
-if not root.find("TexCoordData") is None:
-    uv_data_text = root.find("TexCoordData").text
-    uv_pos = [float(x) for x in uv_data_text.split()]
-    uvs = group(uv_pos, 2)
 
 buffers = etree.SubElement(converted_root, "Buffers")
 
@@ -176,42 +129,26 @@ scn_extent =[max(0.01, y - x) for (x, y) in zip(scn_min, scn_max)]
 
 max_radius = 0
 
-def add_mesh_data(v_buffer, i_buffer, uv = None):
+def add_mesh_data(v_buffer, i_buffer):
     vbuf = etree.SubElement(buffers, "VertexBuffer")
-    v_buffer_txt = "\n".join(map(lambda x : " ".join(map(str, x)), v_buffer))
-
     ibuf = etree.SubElement(buffers, "IndexBuffer")
-    i_buffer_txt = "\n".join(map(lambda x : " ".join(map(str, x)), i_buffer))
 
-    uv_buf, uv_txt = None, None
-    if not uv is None:
-        uv_buf = etree.SubElement(buffers, "UVertexBuffer")
-        uv_txt = "\n".join(map(lambda x : " ".join(map(str, x)), uv))
+    v_buffer_txt = "\n".join(map(lambda x : " ".join(map(str, x)), v_buffer))
+    i_buffer_txt = "\n".join(map(lambda x : " ".join(map(str, x)), i_buffer))
 
     global next_v_buf_id
     global next_i_buf_id
-
     v_buf_id = next_v_buf_id
-    next_v_buf_id += 1
     i_buf_id = next_i_buf_id
+    vbuf.attrib["id"] = str(next_v_buf_id)
+    next_v_buf_id += 1
+    ibuf.attrib["id"] = str(next_i_buf_id)
     next_i_buf_id += 1
 
-    uv_buf_id = None
-    if not uv is None:
-        uv_buf_id = next_v_buf_id
-        next_v_buf_id += 1
-
-    vbuf.attrib["id"] = str(v_buf_id)
     vbuf.text = v_buffer_txt
-
-    ibuf.attrib["id"] = str(i_buf_id)
     ibuf.text = i_buffer_txt
 
-    if not uv is None:
-        uv_buf.attrib["id"] = str(uv_buf_id)
-        uv_buf.text = uv_txt
-
-    return (v_buf_id, i_buf_id, uv_buf_id)
+    return (v_buf_id, i_buf_id)
 
 # parse objects
 
@@ -219,20 +156,6 @@ objects = root.find("Objects")
 new_objects = etree.SubElement(converted_root, "Objects")
 
 for sphere in objects.iterfind("Sphere"):
-    mat_id = int(sphere.find("Material").text)
-
-    if not sphere.find("Texture") is None:
-        texture_id = int(sphere.find("Texture").text)
-        new_mat_id = custom_mat_id + 1
-        custom_mat_id = custom_mat_id + 1
-        materials[new_mat_id] = copy.deepcopy(materials[mat_id])
-        materials[new_mat_id].attrib["id"] = str(new_mat_id)
-        mat_id = new_mat_id
-        materials[mat_id].find("DiffuseReflectance").attrib["tex_id"] = str(texture_id)
-        materials[mat_id].find("DiffuseReflectance").attrib["tex_mode"] = str(textures[texture_id].decal_mode)
-
-    sphere.find("Material").text = str(mat_id)
-
     new_elem = copy.deepcopy(sphere)
     max_radius = max(max_radius, float(new_elem.find("Radius").text))
     new_elem.find("Center").text = " ".join(map(str, vertices[int(sphere.find("Center").text) - 1]))
@@ -245,12 +168,12 @@ scn_extent = [sum(x) for x in zip(scn_extent, (max_radius, max_radius, max_radiu
 converted_root.attrib["center"] = " ".join(map(str, scn_center))
 converted_root.attrib["extent"] = " ".join(map(str, scn_extent))
 
-def add_mesh(mat_id, face_elem, tex_id = None):
+def add_mesh(mat_id, face_elem):
     new_elem = etree.Element("Mesh")
     etree.SubElement(new_elem, "Material").text = str(mat_id)
 
-    v_offset = int(face_elem.attrib["vertexOffset"])
-    face_indices = [int(x) + v_offset for x in face_elem.text.split()]
+    offset = int(face_elem.attrib["vertexOffset"])
+    face_indices = [int(x) + offset for x in face_elem.text.split()]
     faces = group(face_indices, 3)
 
     used_vertices = []
@@ -263,33 +186,10 @@ def add_mesh(mat_id, face_elem, tex_id = None):
         used_vertices.append(vertices[index - 1])
 
     faces = map(lambda (a, b, c): (mapping[a], mapping[b], mapping[c]), faces)
-
-    used_uvs = None
-    if not tex_id is None:
-        uv_offset = 0
-        if ("textureOffset" in face_elem.attrib):
-            uv_offset = int(face_elem.attrib["textureOffset"])
-        uv_indices = [int(x) + uv_offset for x in face_elem.text.split()]
-        uv_faces = group(uv_indices, 2)
-
-        uv_mapping = {}
-        used_uvs = []
-
-        uv_indices = set(uv_indices)
-        for index in uv_indices:
-            uv_mapping[index] = len(used_uvs)
-            used_uvs.append(uvs[index - 1])
-
-        face_uvs = map(lambda (a, b): (uv_mapping[a], uv_mapping[b]), uv_faces)
-
-    (v_id, i_id, uv_id) = add_mesh_data(used_vertices, faces, used_uvs)
+    v_id, i_id = add_mesh_data(used_vertices, faces)
 
     etree.SubElement(new_elem, "VertexBuffer").attrib["id"] = str(v_id)
     etree.SubElement(new_elem, "IndexBuffer").attrib["id"] = str(i_id)
-
-    if not tex_id is None:
-        etree.SubElement(new_elem, "UvBuffer").attrib["id"] = str(uv_id)
-
     return new_elem
 
 meshes = {}
@@ -300,20 +200,7 @@ for mesh in objects.iterfind("Mesh"):
     if not "vertexOffset" in faces.attrib:
         faces.attrib["vertexOffset"] = "0"
 
-    mat_id = int(mesh.find("Material").text)
-
-    texture_id = None
-    if not mesh.find("Texture") is None:
-        texture_id = int(mesh.find("Texture").text)
-        new_mat_id = custom_mat_id + 1
-        custom_mat_id = custom_mat_id + 1
-        materials[new_mat_id] = copy.deepcopy(materials[mat_id])
-        materials[new_mat_id].attrib["id"] = str(new_mat_id)
-        mat_id = new_mat_id
-        materials[mat_id].find("DiffuseReflectance").attrib["tex_id"] = str(texture_id)
-        materials[mat_id].find("DiffuseReflectance").attrib["tex_mode"] = str(textures[texture_id].decal_mode)
-
-    new_elem = add_mesh(mat_id, faces, texture_id)
+    new_elem = add_mesh(int(mesh.find("Material").text), faces)
     if not "shadingMode" in mesh.attrib:
         mesh.attrib["shadingMode"] = "flat"
 
@@ -356,9 +243,6 @@ for tri in objects.iterfind("Triangle"):
 
     new_objects.append(new_elem)
 
-for mat in materials:
-    converted_root.find("Materials").append(materials[mat])
-
 converted_root.attrib["version"] = "1"
 
-print etree.tostring(converted_root)
+#print etree.tostring(converted_root)

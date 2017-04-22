@@ -21,6 +21,9 @@ class mesh {
 
     boost::container::vector<triangle> tris;
     boost::container::vector<glm::vec3> vert_normals;
+
+    boost::container::vector<glm::vec2> uvs;
+
     bvh_type hier;
 
     const material* mat;
@@ -40,7 +43,7 @@ public:
         data_t data;
     };
 
-    mesh(boost::container::vector<triangle> tris, boost::container::vector<int> indices, const material* mat);
+    mesh(boost::container::vector<triangle> tris, boost::container::vector<int> indices, boost::container::vector<glm::vec2> uv, const material* mat);
     mesh(const mesh&) = delete;
     mesh(mesh&&) noexcept;
     ~mesh() noexcept;

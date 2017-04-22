@@ -41,6 +41,8 @@ public:
     scene(scene&&) = default;
     ~scene();
 
+    void set_samplers(std::map<uint16_t, texturing::sampler2d*>);
+
     boost::optional<physics::ray_hit> ray_cast(const physics::ray& ray) const;
     bool ray_cast_param(const physics::ray& ray, float min_param, float max_param) const;
 
@@ -106,6 +108,7 @@ private:
     shape_vector_tuple shapes;
     light_vector_tuple lights;
     std::unique_ptr<lights::ambient_light> ambient;
+    std::map<uint16_t, texturing::sampler2d*> samplers;
 
     std::unordered_map<long, material*> mats;
 };

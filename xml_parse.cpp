@@ -130,11 +130,21 @@ namespace {
     rtr::geometry::mesh
     read_mesh(const xml::XMLElement *elem,
               const std::map<short, rtr::bvector<glm::vec3>> &vs,
+              const std::map<short, rtr::bvector<glm::vec2>> &uvs,
               const std::map<short, rtr::bvector<int>> &indices,
               const std::map<std::string, glm::mat4> &transformations,
               const std::unordered_map<long, rtr::material *> &mats) {
         auto mat_id = elem->FirstChildElement("Material")->Int64Text();
         auto v_id = elem->FirstChildElement("VertexBuffer")->Int64Attribute("id");
+        auto uv_id_elem = elem->FirstChildElement("UvBuffer");
+
+        int uv_id = -1;
+        if (uv_id_elem)
+        {
+            uv_id = uv_id_elem->Int64Attribute("id");
+            // no uvs
+        }
+
         auto i_id = elem->FirstChildElement("IndexBuffer")->Int64Attribute("id");
 
         rtr::bvector<rtr::geometry::triangle> faces;
@@ -152,7 +162,7 @@ namespace {
         }
 
         auto mat_it = mats.find(mat_id);
-        rtr::geometry::mesh m(std::move(faces), inds, mat_it->second);
+        rtr::geometry::mesh m(std::move(faces), inds, (uv_id >= 0) ? uvs.find(uv_id)->second : rtr::bvector<glm::vec2>(), mat_it->second);
         if (elem->Attribute("shadingMode") && elem->Attribute("shadingMode") == std::string("smooth")) {
             m.smooth_normals();
         }
@@ -162,6 +172,7 @@ namespace {
     void read_objects(
             const xml::XMLElement *elem,
             const std::map<short, rtr::bvector<glm::vec3>> &verts,
+            const std::map<short, rtr::bvector<glm::vec2>> &uvs,
             const std::map<short, rtr::bvector<int>> &indices,
             const std::map<std::string, glm::mat4> &transformations,
             const std::unordered_map<long, rtr::material *> &mats,
@@ -172,7 +183,7 @@ namespace {
 
         for (auto s = elem->FirstChildElement(); s; s = s->NextSiblingElement()) {
             if (s->Name() == std::string("Mesh") || s->Name() == std::string("Triangle")) {
-                sc.insert(read_mesh(s, verts, indices, transformations, mats));
+                sc.insert(read_mesh(s, verts, uvs, indices, transformations, mats));
             } else if (s->Name() == std::string("Sphere")) {
                 auto &&sphere = read_sphere(s, mats, transformations);
                 if (sphere.get_radius() > max_radius) {
@@ -191,7 +202,7 @@ namespace {
     {
         boost::gil::rgb8_image_t im;
         auto p = elem->FirstChildElement("Path")->GetText();
-        float scaling = elem->FirstChildElement("ScalingFactor")->FloatText(255);
+        float scaling = elem->FirstChildElement("Scaling")->FloatText(255);
         boost::gil::jpeg_read_image(p, im);
         auto view = boost::gil::view (im);
 
@@ -293,7 +304,20 @@ namespace {
         int id;
         if ((id = dif_elem->IntAttribute("tex_id", -1)) != -1)
         {
-            return {texs.find(id)->second, specular, ambient, phong};
+            rtr::rt_mat::decal_mode m = rtr::rt_mat::decal_mode::replace;
+
+            auto mo = dif_elem->Attribute("tex_mode");
+            if (mo == std::string("decal_modes.ReplaceCoeff")) m = rtr::rt_mat::decal_mode::coeff;
+            else if (mo == std::string("decal_modes.ReplaceComplete")) m = rtr::rt_mat::decal_mode::replace;
+            else if (mo == std::string("decal_modes.BlendCoeff")) m = rtr::rt_mat::decal_mode::blend;
+
+            if (m == rtr::rt_mat::decal_mode::blend)
+            {
+                iss = std::istringstream(get_text("DiffuseReflectance"));
+                iss >> diffuse[0] >> diffuse[1] >> diffuse[2];
+                return {texs.find(id)->second, diffuse, specular, ambient, phong};
+            }
+            return {texs.find(id)->second, m, specular, ambient, phong};
         }
         else
         {
@@ -394,6 +418,16 @@ namespace {
         return vert_pos;
     }
 
+    rtr::bvector<glm::vec2> parse_uvector_buffer(const xml::XMLElement *elem) {
+        rtr::bvector<glm::vec2> vert_pos;
+        auto vert_text = elem->GetText();
+        auto iss = std::istringstream(vert_text);
+        for (glm::vec2 v; iss >> v[0] >> v[1];) {
+            vert_pos.push_back(v);
+        }
+        return vert_pos;
+    }
+
     rtr::bvector<int> parse_index_buffer(const xml::XMLElement *elem) {
         rtr::bvector<int> vert_pos;
         auto vert_text = elem->GetText();
@@ -473,12 +507,15 @@ namespace rtr {
             }
 
             std::map<short, bvector<glm::vec3>> v_buffers;
+            std::map<short, bvector<glm::vec2>> uv_buffers;
             std::map<short, bvector<int>> i_buffers;
 
             auto buffers = root->FirstChildElement("Buffers");
             for (auto b = buffers->FirstChildElement(); b; b = b->NextSiblingElement()) {
                 if (b->Name() == std::string("VertexBuffer")) {
                     v_buffers.emplace(b->Int64Attribute("id"), parse_vector_buffer(b));
+                } else if (b->Name() == std::string("UVertexBuffer")) {
+                    uv_buffers.emplace(b->Int64Attribute("id"), parse_uvector_buffer(b));
                 } else if (b->Name() == std::string("IndexBuffer")) {
                     i_buffers.emplace(b->Int64Attribute("id"), parse_index_buffer(b));
                 }
@@ -488,7 +525,13 @@ namespace rtr {
             auto textures_elem = root->FirstChildElement("Textures");
             for (auto t = textures_elem->FirstChildElement(); t; t = t->NextSiblingElement())
             {
-                textures.emplace(t->Int64Attribute("id"), read_image(t));
+                if (t->Name() == std::string("Image"))
+                {
+                    textures.emplace(t->Int64Attribute("id"), read_image(t));
+                }
+                else if (t->Name() == std::string("Perlin"))
+                {
+                }
             }
 
             std::unordered_map<long, rtr::material *> mats;
@@ -512,8 +555,10 @@ namespace rtr {
             auto objs_root = root->FirstChildElement("Objects");
             auto lights = root->FirstChildElement("Lights");
 
-            read_objects(objs_root, v_buffers, i_buffers, transformations, s.materials(), s);
+            read_objects(objs_root, v_buffers, uv_buffers, i_buffers, transformations, s.materials(), s);
             read_lights(lights, s);
+
+            s.set_samplers(std::move(textures));
 
             return std::make_pair(std::move(s), std::move(cams));
         }

@@ -62,7 +62,8 @@ namespace geometry
             } data;
         };
 
-        triangle(const std::array<glm::vec3, 3>& vs) : vertices(vs)
+        triangle(const std::array<glm::vec3, 3>& vs)
+                : vertices(vs)
         {
             m_normal = glm::normalize(glm::cross(verts.b - verts.a, verts.c - verts.a));
         }

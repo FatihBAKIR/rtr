@@ -21,6 +21,8 @@ namespace texturing
     template <class channel_t, int num_channels>
     glm::vec3 tex2d<channel_t, num_channels>::sample(int x, int y) const
     {
+        x %= w;
+        y %= h;
         auto r = m_data[(y * w + x) * num_channels];
         auto g = m_data[(y * w + x) * num_channels + 1];
         auto b = m_data[(y * w + x) * num_channels + 2];
@@ -28,8 +30,12 @@ namespace texturing
     }
 
     template <class channel_t, int num_channels>
-    glm::vec3 tex2d<channel_t, num_channels>::sample(const glm::vec2& uv) const
+    glm::vec3 tex2d<channel_t, num_channels>::sample(const glm::vec2& uv_o) const
     {
+        auto uv = glm::vec2(std::fmod(uv_o.x, 1.f), std::fmod(uv_o.y, 1.f));
+        if (uv.x < 0) uv.x += 1.f;
+        if (uv.y < 0) uv.y += 1.f;
+
         switch (mode)
         {
         case sampling_mode::nearest_neighbour:

@@ -53,6 +53,11 @@ bool rtr::scene::ray_cast_param(const physics::ray& ray, float min_param, float 
 template <class ShapeT>
 using shape_ptr_data_tuple = std::tuple<const ShapeT*, decltype(std::declval<typename ShapeT::param_res_t>().data)>;
 
+void rtr::scene::set_samplers(std::map<uint16_t, texturing::sampler2d*> smplrs)
+{
+    this->samplers = std::move(smplrs);
+}
+
 boost::optional<rtr::physics::ray_hit> rtr::scene::ray_cast(const rtr::physics::ray &ray) const {
 
     using shape_pointers = png::map_t<png::mapper<shape_ptr_data_tuple>, shape_list>;

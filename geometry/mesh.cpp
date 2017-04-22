@@ -132,11 +132,12 @@ namespace geometry
 
     physics::ray_hit mesh::intersect(const physics::ray& ray, float parameter, data_t& data) const
     {
+        auto tri_index = data.tri - tris.data();
         glm::vec3 normal = data.tri->get_normal();
+        glm::vec2 uv = {};
 
         if (vert_normals.size())
         {
-            auto tri_index = data.tri - tris.data();
             const auto& normal_1 = vert_normals[tri_index * 3];
             const auto& normal_2 = vert_normals[tri_index * 3 + 1];
             const auto& normal_3 = vert_normals[tri_index * 3 + 2];
@@ -144,13 +145,24 @@ namespace geometry
             normal = glm::normalize(normal_1 * data.alpha + normal_2 * data.beta + normal_3 * data.gamma);
         }
 
-        return physics::ray_hit{ this, ray, mat, ray.origin + ray.dir * parameter, normal, parameter };
+        if (uvs.size())
+        {
+            const auto& uv_1 = uvs[face_indices[tri_index * 3]];
+            const auto& uv_2 = uvs[face_indices[tri_index * 3 + 1]];
+            const auto& uv_3 = uvs[face_indices[tri_index * 3 + 2]];
+
+            uv= uv_1 * data.alpha +
+                uv_2 * data.beta +
+                uv_3 * data.gamma;
+        }
+
+        return physics::ray_hit{ this, ray, mat, ray.origin + ray.dir * parameter, normal, parameter, uv };
     }
 
     mesh::~mesh() noexcept = default;
 
-    mesh::mesh(boost::container::vector<triangle> tris, bvector<int> indices, const material* m)
-            : tris(std::move(tris)), face_indices(std::move(indices)), hier(make_bvh(this->tris)), mat(m)
+    mesh::mesh(boost::container::vector<triangle> tris, bvector<int> indices, bvector<glm::vec2> uv, const material* m)
+            : tris(std::move(tris)), face_indices(std::move(indices)), hier(make_bvh(this->tris)), mat(m), uvs(std::move(uv))
     {
     }
 
@@ -186,6 +198,7 @@ namespace geometry
         face_indices(std::move(rhs.face_indices)),
         vert_normals(std::move(rhs.vert_normals)),
         hier(std::move(rhs.hier)),
+        uvs(std::move(rhs.uvs)),
         mat(rhs.mat)
     {
     }

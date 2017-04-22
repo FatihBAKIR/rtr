@@ -68,7 +68,7 @@ set (COMMON_FILES ${LIGHT_FILES} ${GEOMETRY_FILES} ${PHYSICS_FILES} ${TRANSFORM_
         materials/shading_ctx.hpp
         materials/material.hpp
         materials/rt_mat.hpp materials/rt_mat.cpp
-        materials/normal_mat.cpp materials/normal_mat.hpp assimp_import.cpp assimp_import.hpp)
+        materials/normal_mat.cpp materials/normal_mat.hpp)
 
 set (GIL_HDR_FILES gil_extension/exr/detail/color_space_traits.cpp)
 

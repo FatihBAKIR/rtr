@@ -64,20 +64,41 @@ namespace rtr
             }
         );
 
-        scene.for_lights(light_handler);
+        if (mode == decal_mode::replace)
+        {
+            return this->diffuse_sampler->sample(ctx.hit.uv) * 255.f;
+        }
 
-        diffuse *= this->diffuse_sampler->sample(ctx.hit.uv);
+        scene.for_lights(light_handler);
+        switch (mode)
+        {
+        case decal_mode::replace:
+            break;
+        case decal_mode::coeff:
+            diffuse *= this->diffuse_sampler->sample(ctx.hit.uv);
+            break;
+        case decal_mode::blend:
+            diffuse *= (this->diffuse_sampler->sample(ctx.hit.uv) + this->diffuse) * 0.5f;
+            break;
+        }
+
         specular *= this->specular;
 
         return ambient + diffuse + specular;
     }
 
-    rt_mat::rt_mat(const texturing::sampler2d* diff_sampler, const glm::vec3& specular, const glm::vec3& ambient,
+    rt_mat::rt_mat(const texturing::sampler2d* diff_sampler, decal_mode m, const glm::vec3& specular, const glm::vec3& ambient,
             float phong)
     {
         this->diffuse_sampler = diff_sampler;
+        this->mode = m;
         this->specular = specular;
         this->ambient = ambient;
+        if (m == decal_mode::replace)
+        {
+            this->specular = {};
+            this->ambient = {};
+        }
         this->phong = phong;
     }
 
@@ -88,12 +109,25 @@ namespace rtr
             diffuse.g,
             diffuse.b
         };
+
         auto diffuse_sampler = new texturing::tex2d<float, 3>(test, 1, 1);
         diffuse_sampler->set_sampling_mode(texturing::sampling_mode::nearest_neighbour);
         this->diffuse_sampler = diffuse_sampler;
+        this->mode = decal_mode::coeff;
 
         this->specular = specular;
         this->ambient = ambient;
+        this->phong = phong;
+    }
+
+    rt_mat::rt_mat(const texturing::sampler2d* diff_sampler, const glm::vec3& diffuse, const glm::vec3& specular,
+            const glm::vec3& ambient, float phong)
+    {
+        this->diffuse_sampler = diff_sampler;
+        this->mode = decal_mode::blend;
+        this->specular = specular;
+        this->ambient = ambient;
+        this->diffuse = diffuse;
         this->phong = phong;
     }
 }
