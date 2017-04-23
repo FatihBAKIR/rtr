@@ -21,10 +21,10 @@ namespace texturing
         glm::vec3 sample(int x, int y) const;
 
     public:
-        tex2d(const channel_t*, int width, int height, float scaling = 1);
+        tex2d(const channel_t*, int width, int height, float scaling = 1, sampling_mode m = sampling_mode::nearest_neighbour);
         ~tex2d() override;
 
-        glm::vec3 sample(const glm::vec2& uv) const override;
+        glm::vec3 sample(const glm::vec3& uv) const override;
         void set_sampling_mode(sampling_mode mode) override;
     };
 }

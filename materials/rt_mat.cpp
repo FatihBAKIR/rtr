@@ -11,6 +11,7 @@
 #include <materials/shading_ctx.hpp>
 #include <texturing/sampler.hpp>
 #include <texturing/tex2d.hpp>
+#include <texturing/perlin2d.hpp>
 
 namespace rtr
 {
@@ -64,9 +65,11 @@ namespace rtr
             }
         );
 
+        auto tex_pos = is_perlin ? ctx.hit.position : glm::vec3(ctx.hit.uv, 0);
+
         if (mode == decal_mode::replace)
         {
-            return this->diffuse_sampler->sample(ctx.hit.uv) * 255.f;
+            return this->diffuse_sampler->sample(tex_pos) * 255.f;
         }
 
         scene.for_lights(light_handler);
@@ -75,10 +78,10 @@ namespace rtr
         case decal_mode::replace:
             break;
         case decal_mode::coeff:
-            diffuse *= this->diffuse_sampler->sample(ctx.hit.uv);
+            diffuse *= this->diffuse_sampler->sample(tex_pos);
             break;
         case decal_mode::blend:
-            diffuse *= (this->diffuse_sampler->sample(ctx.hit.uv) + this->diffuse) * 0.5f;
+            diffuse *= (this->diffuse_sampler->sample(tex_pos) + this->diffuse) * 0.5f;
             break;
         }
 
@@ -100,6 +103,7 @@ namespace rtr
             this->ambient = {};
         }
         this->phong = phong;
+        this->is_perlin = dynamic_cast<const texturing::perlin2d*>(diff_sampler)!=nullptr;
     }
 
     rt_mat::rt_mat(const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& ambient, float phong)
@@ -118,6 +122,7 @@ namespace rtr
         this->specular = specular;
         this->ambient = ambient;
         this->phong = phong;
+        this->is_perlin = false;
     }
 
     rt_mat::rt_mat(const texturing::sampler2d* diff_sampler, const glm::vec3& diffuse, const glm::vec3& specular,
@@ -129,5 +134,6 @@ namespace rtr
         this->ambient = ambient;
         this->diffuse = diffuse;
         this->phong = phong;
+        this->is_perlin = dynamic_cast<const texturing::perlin2d*>(diff_sampler)!=nullptr;
     }
 }

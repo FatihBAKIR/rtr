@@ -76,12 +76,19 @@ class perlin_data(texture):
 
         super(perlin_data, self).to_xml(elem)
         etree.SubElement(elem, "Appearance").text = str(self.appearance)
+        etree.SubElement(elem, "ScalingFactor").text = str(self.scale_factor)
 
         return elem
+
+
+class sampling_mode(Enum):
+    Nearest = 0
+    Bilinear = 1
 
 class image_data(texture):
     path = ""
     scaling = 1
+    sampling = sampling_mode.Nearest
 
     def to_xml(self, elem):
         elem = etree.Element("Image")
@@ -89,6 +96,7 @@ class image_data(texture):
         super(image_data, self).to_xml(elem)
         etree.SubElement(elem, "Path").text = self.path
         etree.SubElement(elem, "Scaling").text = str(self.scaling)
+        etree.SubElement(elem, "Sampling").text = str(self.sampling)
 
         return elem
 
@@ -101,6 +109,7 @@ def parse_texture(elem):
         res.scale_factor = float(elem.find("ScalingFactor").text)
     else:
         res = image_data()
+        res.sampling = sampling_mode.Nearest if elem.find("Interpolation").text == "nearest" else sampling_mode.Bilinear
         res.path = elem.find("ImageName").text
         res.scaling = 255
 
@@ -346,7 +355,19 @@ for tri in objects.iterfind("Triangle"):
     if not "vertexOffset" in faces.attrib:
         faces.attrib["vertexOffset"] = "0"
 
-    new_elem = add_mesh(int(mesh.find("Material").text), faces)
+    mat_id = int(mesh.find("Material").text)
+    texture_id = None
+    if not mesh.find("Texture") is None:
+        texture_id = int(mesh.find("Texture").text)
+        new_mat_id = custom_mat_id + 1
+        custom_mat_id = custom_mat_id + 1
+        materials[new_mat_id] = copy.deepcopy(materials[mat_id])
+        materials[new_mat_id].attrib["id"] = str(new_mat_id)
+        mat_id = new_mat_id
+        materials[mat_id].find("DiffuseReflectance").attrib["tex_id"] = str(texture_id)
+        materials[mat_id].find("DiffuseReflectance").attrib["tex_mode"] = str(textures[texture_id].decal_mode)
+
+    new_elem = add_mesh(mat_id, faces, texture_id)
 
     new_elem.attrib["FromTri"] = str(True)
     if tri.find("Transformations") is None:

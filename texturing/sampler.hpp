@@ -17,7 +17,8 @@ namespace texturing
     class sampler2d
     {
     public:
-        virtual glm::vec3 sample(const glm::vec2& uv) const = 0;
+        virtual glm::vec3 sample(const glm::vec3& pos) const = 0;
+        glm::vec3 sample(const glm::vec2& uv) const { return sample(glm::vec3(uv, 0)); };
         virtual void set_sampling_mode(sampling_mode) {}
         virtual ~sampler2d() = 0;
     };

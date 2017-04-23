@@ -31,6 +31,7 @@
 #include <boost/gil/image_view.hpp>
 
 #include <texturing/tex2d.hpp>
+#include <texturing/perlin2d.hpp>
 
 namespace xml = tinyxml2;
 namespace {
@@ -203,12 +204,32 @@ namespace {
         boost::gil::rgb8_image_t im;
         auto p = elem->FirstChildElement("Path")->GetText();
         float scaling = elem->FirstChildElement("Scaling")->FloatText(255);
+        rtr::texturing::sampling_mode m = rtr::texturing::sampling_mode::nearest_neighbour;
+
+        auto app_elem = elem->FirstChildElement("Sampling")->GetText();
+        if (app_elem == std::string("sampling_mode.Nearest")) m = rtr::texturing::sampling_mode::nearest_neighbour;
+        else if (app_elem == std::string("sampling_mode.Bilinear")) m = rtr::texturing::sampling_mode::bilinear;
+
         boost::gil::jpeg_read_image(p, im);
         auto view = boost::gil::view (im);
 
         assert(view.is_1d_traversable());
 
-        return new rtr::texturing::tex2d<uint8_t, 3>((const uint8_t*)(&view[0][0]), view.width(), view.height(), scaling);
+        return new rtr::texturing::tex2d<uint8_t, 3>((const uint8_t*)(&view[0][0]), view.width(), view.height(), scaling, m);
+    }
+
+    rtr::texturing::sampler2d* read_perlin(const xml::XMLElement* elem)
+    {
+        rtr::texturing::perlin_appearance appearance = rtr::texturing::perlin_appearance::vein;
+        float scaling;
+
+        auto app_elem = elem->FirstChildElement("Appearance")->GetText();
+        if (app_elem == std::string("perlin_types.Vein")) appearance = rtr::texturing::perlin_appearance::vein;
+        else if (app_elem == std::string("perlin_types.Patch")) appearance = rtr::texturing::perlin_appearance::patch;
+
+        scaling = elem->FirstChildElement("ScalingFactor")->FloatText();
+
+        return new rtr::texturing::perlin2d(appearance, scaling);
     }
 
     rtr::lights::ambient_light read_ambient(const xml::XMLElement *elem) {
@@ -531,6 +552,7 @@ namespace rtr {
                 }
                 else if (t->Name() == std::string("Perlin"))
                 {
+                    textures.emplace(t->Int64Attribute("id"), read_perlin(t));
                 }
             }
 

@@ -33,6 +33,7 @@ namespace rtr
         glm::vec3 specular;
         glm::vec3 ambient;
         glm::vec3 diffuse;
+        bool is_perlin;
 
         float phong;
     };

@@ -5,7 +5,7 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 set(CMAKE_CXX_STANDARD 14)
 
 set(DEBUG_FLAGS "-g -O0")
-set(RELEASE_FLAGS "-Ofast -march=native -fno-rtti -fno-stack-protector")
+set(RELEASE_FLAGS "-Ofast -march=native -fno-stack-protector")
 
 add_definitions(-DRTR_VERSION_MAJOR=0)
 add_definitions(-DRTR_VERSION_MINOR=2)
@@ -75,7 +75,7 @@ set (GIL_HDR_FILES gil_extension/exr/detail/color_space_traits.cpp)
 set (TEST_FILES ${GIL_HDR_FILES} ${COMMON_FILES} tests/physics/collisions.cpp tests/tests_main.cpp tests/physics/bvh_tests.cpp)
 
 set (SOURCE_FILES ${GIL_HDR_FILES} ${COMMON_FILES} main.cpp materials/toon_shading.cpp materials/toon_shading.hpp
-        materials/mirror_material.cpp materials/mirror_material.h materials/glass.cpp materials/glass.h lights/spot_light.hpp lights/area_light.hpp materials/metal.cpp materials/metal.hpp texturing/sampler.cpp texturing/sampler.hpp texturing/tex2d.cpp texturing/tex2d.hpp)
+        materials/mirror_material.cpp materials/mirror_material.h materials/glass.cpp materials/glass.h lights/spot_light.hpp lights/area_light.hpp materials/metal.cpp materials/metal.hpp texturing/sampler.cpp texturing/sampler.hpp texturing/tex2d.cpp texturing/tex2d.hpp texturing/perlin2d.cpp texturing/perlin2d.hpp)
 
 if(MSVC)
     if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")

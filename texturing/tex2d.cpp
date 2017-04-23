@@ -9,11 +9,12 @@ namespace rtr
 namespace texturing
 {
     template <class channel_t, int num_channels>
-    tex2d<channel_t, num_channels>::tex2d(const channel_t* data, int width, int height, float scaling)
+    tex2d<channel_t, num_channels>::tex2d(const channel_t* data, int width, int height, float scaling, sampling_mode m)
     {
         m_data = std::make_unique<channel_t[]>(width * height * num_channels);
         w = width;
         h = height;
+        mode = m;
         this->scaling = scaling;
         std::copy(data, data + w * h * num_channels, m_data.get());
     }
@@ -29,8 +30,16 @@ namespace texturing
         return glm::vec3(r, g, b) / scaling;
     }
 
+    template <class T>
+    T lerp(T s, T e, float t){return s+(e-s)*t;}
+
+    template <class T>
+    T blerp(T c00, T c10, T c01, T c11, float tx, float ty){
+        return lerp(lerp(c00, c10, tx), lerp(c01, c11, tx), ty);
+    }
+
     template <class channel_t, int num_channels>
-    glm::vec3 tex2d<channel_t, num_channels>::sample(const glm::vec2& uv_o) const
+    glm::vec3 tex2d<channel_t, num_channels>::sample(const glm::vec3& uv_o) const
     {
         auto uv = glm::vec2(std::fmod(uv_o.x, 1.f), std::fmod(uv_o.y, 1.f));
         if (uv.x < 0) uv.x += 1.f;
@@ -41,7 +50,11 @@ namespace texturing
         case sampling_mode::nearest_neighbour:
             return sample(std::round(uv.x * w), std::round(uv.y * h));
         case sampling_mode::bilinear:
-            return {};
+            auto tl = sample(std::floor(uv.x * w), std::floor(uv.y * h));
+            auto tr = sample(std::ceil(uv.x * w), std::floor(uv.y * h));
+            auto bl = sample(std::floor(uv.x * w), std::ceil(uv.y * h));
+            auto br = sample(std::ceil(uv.x * w), std::ceil(uv.y * h));
+            return blerp(tl, tr, bl, br, uv.x, uv.y);
         }
     }
 

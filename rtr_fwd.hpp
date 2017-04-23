@@ -50,6 +50,7 @@ namespace rtr {
     {
         class sampler2d;
         template <class, int> class tex2d;
+        class perlin2d;
     }
 
     namespace lights
