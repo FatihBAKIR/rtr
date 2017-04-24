@@ -20,7 +20,7 @@ class scene
     using shape_vectors = png::map_t<png::mapper<bvector>, shape_list>;
     using shape_vector_tuple = png::convert_t<boost::fusion::vector, shape_vectors>;
 
-    using light_list = png::list<lights::point_light, lights::spot_light, lights::area_light>;
+    using light_list = png::list<lights::point_light, lights::spot_light, lights::area_light, lights::directional_light>;
     using light_vectors = png::map_t<png::mapper<bvector>, light_list>;
     using light_vector_tuple = png::convert_t<boost::fusion::vector, light_vectors>;
 

@@ -4,9 +4,9 @@
 
 #include <iostream>
 #include <queue>
+#include <utility.hpp>
 #include <geometry/mesh.hpp>
 #include <physics/ray.hpp>
-#include <utility.hpp>
 #include <chrono>
 #include <unordered_map>
 #include <boost/container/static_vector.hpp>
@@ -16,9 +16,7 @@
 #include <spdlog/spdlog.h>
 #include <rtr_config.hpp>
 
-#ifndef __linux__
 #include <spdlog/fmt/ostr.h>
-#endif
 
 #include <physics/bvh.hpp>
 #include <tbb/task_group.h>

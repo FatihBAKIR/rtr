@@ -26,6 +26,8 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <random>
+#include <chrono>
+#include <iostream>
 
 namespace rtr {
 
@@ -159,11 +161,9 @@ namespace rtr {
     camera::render(const scene &scene) const {
         static auto id = 0;
 
-#if RTR_SPDLOG_SUPPORT
         auto logger = spdlog::stderr_logger_st("camera " + std::to_string(++id));
         logger->info("Rendering with configuration \"{0}\"", render_type::name);
         logger->info("Output file: {0}", m_output);
-#endif
 
         using namespace physics;
 

@@ -75,7 +75,7 @@ set (GIL_HDR_FILES gil_extension/exr/detail/color_space_traits.cpp)
 set (TEST_FILES ${GIL_HDR_FILES} ${COMMON_FILES} tests/physics/collisions.cpp tests/tests_main.cpp tests/physics/bvh_tests.cpp)
 
 set (SOURCE_FILES ${GIL_HDR_FILES} ${COMMON_FILES} main.cpp materials/toon_shading.cpp materials/toon_shading.hpp
-        materials/mirror_material.cpp materials/mirror_material.h materials/glass.cpp materials/glass.h lights/spot_light.hpp lights/area_light.hpp materials/metal.cpp materials/metal.hpp texturing/sampler.cpp texturing/sampler.hpp texturing/tex2d.cpp texturing/tex2d.hpp texturing/perlin2d.cpp texturing/perlin2d.hpp)
+        materials/mirror_material.cpp materials/mirror_material.h materials/glass.cpp materials/glass.h lights/spot_light.hpp lights/area_light.hpp materials/metal.cpp materials/metal.hpp texturing/sampler.cpp texturing/sampler.hpp texturing/tex2d.cpp texturing/tex2d.hpp texturing/perlin2d.cpp texturing/perlin2d.hpp lights/directional_light.hpp)
 
 if(MSVC)
     if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
@@ -180,7 +180,7 @@ if (TBB_FOUND)
     target_link_libraries(ray tbb)
 endif()
 
-cotire(ray)
+#cotire(ray)
 
 target_include_directories(tests PUBLIC ${CMAKE_SOURCE_DIR})
 

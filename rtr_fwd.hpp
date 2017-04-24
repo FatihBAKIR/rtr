@@ -59,5 +59,6 @@ namespace rtr {
         class point_light;
         class spot_light;
         class area_light;
+        class directional_light;
     }
 }

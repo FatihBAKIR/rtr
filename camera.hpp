@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 #include <render_configs.hpp>
 #include <rtr_config.hpp>
+#include <atomic>
 
 namespace rtr
 {

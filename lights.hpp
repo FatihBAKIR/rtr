@@ -8,3 +8,4 @@
 #include <lights/point_light.hpp>
 #include <lights/spot_light.hpp>
 #include <lights/area_light.hpp>
+#include <lights/directional_light.hpp>

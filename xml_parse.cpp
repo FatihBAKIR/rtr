@@ -271,6 +271,18 @@ namespace {
         return {pos, inte, e1, e2, samples};
     }
 
+    rtr::lights::directional_light read_directional(const xml::XMLElement *elem) {
+        glm::vec3 dir, radi;
+
+        std::istringstream iss(elem->FirstChildElement("Direction")->GetText());
+        iss >> dir[0] >> dir[1] >> dir[2];
+
+        iss = std::istringstream(elem->FirstChildElement("Radiance")->GetText());
+        iss >> radi[0] >> radi[1] >> radi[2];
+
+        return {dir, radi};
+    }
+
     rtr::lights::spot_light read_spot(const xml::XMLElement* elem)
     {
         glm::vec3 pos, inte, dir;
@@ -301,6 +313,8 @@ namespace {
                 sc.insert(read_spot(l));
             } else if (l->Name() == std::string("AreaLight")) {
                 sc.insert(read_area(l));
+            } else if (l->Name() == std::string("DirectionalLight")) {
+                sc.insert(read_directional(l));
             } else {
                 abort();
             }

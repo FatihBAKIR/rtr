@@ -3,6 +3,9 @@
 //
 
 #include "perlin2d.hpp"
+#include <random>
+#include <vector>
+#include <algorithm>
 
 namespace rtr
 {
