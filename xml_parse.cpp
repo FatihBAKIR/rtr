@@ -13,6 +13,7 @@
 #include <iostream>
 #include <vector>
 #include <queue>
+#include <map>
 
 #include <materials/rt_mat.hpp>
 #include <tinyxml2.h>
@@ -207,8 +208,8 @@ namespace {
         rtr::texturing::sampling_mode m = rtr::texturing::sampling_mode::nearest_neighbour;
 
         auto app_elem = elem->FirstChildElement("Sampling")->GetText();
-        if (app_elem == std::string("sampling_mode.Nearest")) m = rtr::texturing::sampling_mode::nearest_neighbour;
-        else if (app_elem == std::string("sampling_mode.Bilinear")) m = rtr::texturing::sampling_mode::bilinear;
+        if (app_elem == std::string("0")) m = rtr::texturing::sampling_mode::nearest_neighbour;
+        else if (app_elem == std::string("1")) m = rtr::texturing::sampling_mode::bilinear;
 
         boost::gil::jpeg_read_image(p, im);
         auto view = boost::gil::view (im);
@@ -224,8 +225,8 @@ namespace {
         float scaling;
 
         auto app_elem = elem->FirstChildElement("Appearance")->GetText();
-        if (app_elem == std::string("perlin_types.Vein")) appearance = rtr::texturing::perlin_appearance::vein;
-        else if (app_elem == std::string("perlin_types.Patch")) appearance = rtr::texturing::perlin_appearance::patch;
+        if (app_elem == std::string("0")) appearance = rtr::texturing::perlin_appearance::vein;
+        else if (app_elem == std::string("1")) appearance = rtr::texturing::perlin_appearance::patch;
 
         scaling = elem->FirstChildElement("ScalingFactor")->FloatText();
 
@@ -328,9 +329,9 @@ namespace {
             rtr::rt_mat::decal_mode m = rtr::rt_mat::decal_mode::replace;
 
             auto mo = dif_elem->Attribute("tex_mode");
-            if (mo == std::string("decal_modes.ReplaceCoeff")) m = rtr::rt_mat::decal_mode::coeff;
-            else if (mo == std::string("decal_modes.ReplaceComplete")) m = rtr::rt_mat::decal_mode::replace;
-            else if (mo == std::string("decal_modes.BlendCoeff")) m = rtr::rt_mat::decal_mode::blend;
+            if (mo == std::string("0")) m = rtr::rt_mat::decal_mode::blend;
+            else if (mo == std::string("1")) m = rtr::rt_mat::decal_mode::coeff;
+            else if (mo == std::string("2")) m = rtr::rt_mat::decal_mode::replace;
 
             if (m == rtr::rt_mat::decal_mode::blend)
             {

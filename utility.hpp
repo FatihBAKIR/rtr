@@ -7,6 +7,7 @@
 #include <glm/vec3.hpp>
 #include <iosfwd>
 #include <boost/variant/static_visitor.hpp>
+#include <array>
 
 namespace glm
 {

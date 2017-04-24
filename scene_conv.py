@@ -1,7 +1,6 @@
 import sys
 import copy
 import xml.etree.ElementTree as etree
-from enum import Enum
 
 tree = etree.parse(sys.argv[1])
 root = tree.getroot()
@@ -38,11 +37,9 @@ if not (root.find("Transformations") is None):
 else:
     etree.SubElement(converted_root, "Transformations")
 
-#converted_root.append(copy.deepcopy(root.find("Materials"))) # materials are almost the same
-
 new_mats = etree.SubElement(converted_root, "Materials")
 
-class decal_modes(Enum):
+class decal_modes():
     BlendCoeff = 0
     ReplaceCoeff = 1
     ReplaceComplete = 2
@@ -63,9 +60,9 @@ class texture(object):
     def to_xml(self, elem):
         elem.attrib["id"] = str(self.id)
 
-class perlin_types(Enum):
-    Vein = 1
-    Patch = 2
+class perlin_types():
+    Vein = 0
+    Patch = 1
 
 class perlin_data(texture):
     appearance = perlin_types.Vein
@@ -81,7 +78,7 @@ class perlin_data(texture):
         return elem
 
 
-class sampling_mode(Enum):
+class sampling_mode():
     Nearest = 0
     Bilinear = 1
 
@@ -274,7 +271,7 @@ def add_mesh(mat_id, face_elem, tex_id = None):
     faces = map(lambda (a, b, c): (mapping[a], mapping[b], mapping[c]), faces)
 
     used_uvs = None
-    if not tex_id is None:
+    if not tex_id is None and not isinstance(textures[tex_id], perlin_data):
         uv_offset = 0
         if ("textureOffset" in face_elem.attrib):
             uv_offset = int(face_elem.attrib["textureOffset"])
@@ -290,6 +287,8 @@ def add_mesh(mat_id, face_elem, tex_id = None):
             used_uvs.append(uvs[index - 1])
 
         face_uvs = map(lambda (a, b): (uv_mapping[a], uv_mapping[b]), uv_faces)
+    else:
+        tex_id = None
 
     (v_id, i_id, uv_id) = add_mesh_data(used_vertices, faces, used_uvs)
 

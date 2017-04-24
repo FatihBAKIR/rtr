@@ -23,6 +23,10 @@
 
 #endif
 
+#include <vector>
+#include <glm/glm.hpp>
+#include <random>
+
 namespace rtr {
 
     struct pix_iterator

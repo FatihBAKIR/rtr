@@ -5,6 +5,7 @@
 #include <utility.hpp>
 #include <ostream>
 #include <random>
+#include <glm/glm.hpp>
 
 namespace glm
 {

@@ -13,6 +13,8 @@
     #include <boost/gil/extension/io/png_io.hpp>
 #endif
 
+#include <boost/gil/gil_all.hpp>
+
 #include <glm/glm.hpp>
 
 namespace rtr

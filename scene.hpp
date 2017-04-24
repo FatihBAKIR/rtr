@@ -10,6 +10,7 @@
 #include <physics/octree.hpp>
 #include <unordered_map>
 #include <materials/rt_mat.hpp>
+#include <map>
 
 namespace rtr
 {
