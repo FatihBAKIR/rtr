@@ -86,6 +86,7 @@ class image_data(texture):
     path = ""
     scaling = 1
     sampling = sampling_mode.Nearest
+    is_bump = False
 
     def to_xml(self, elem):
         elem = etree.Element("Image")
@@ -109,6 +110,7 @@ def parse_texture(elem):
         res.sampling = sampling_mode.Nearest if elem.find("Interpolation").text == "nearest" else sampling_mode.Bilinear
         res.path = elem.find("ImageName").text
         res.scaling = 255
+        res.is_bump = ("bumpmap" in elem.attrib and elem.attrib["bumpmap"] == "true")
 
     res.decal_mode = get_decal_mode(elem.find("DecalMode").text)
     res.id = int(elem.attrib["id"])
@@ -236,7 +238,9 @@ for sphere in objects.iterfind("Sphere"):
         mat_id = new_mat_id
         materials[mat_id].find("DiffuseReflectance").attrib["tex_id"] = str(texture_id)
         materials[mat_id].find("DiffuseReflectance").attrib["tex_mode"] = str(textures[texture_id].decal_mode)
-
+        if isinstance(textures[texture_id], image_data):
+            if textures[texture_id].is_bump:
+                materials[mat_id].attrib["shader"] = "bump"
     sphere.find("Material").text = str(mat_id)
 
     new_elem = copy.deepcopy(sphere)
@@ -320,6 +324,9 @@ for mesh in objects.iterfind("Mesh"):
         mat_id = new_mat_id
         materials[mat_id].find("DiffuseReflectance").attrib["tex_id"] = str(texture_id)
         materials[mat_id].find("DiffuseReflectance").attrib["tex_mode"] = str(textures[texture_id].decal_mode)
+        if isinstance(textures[texture_id], image_data):
+            if textures[texture_id].is_bump:
+                materials[mat_id].attrib["shader"] = "bump"
 
     new_elem = add_mesh(mat_id, faces, texture_id)
     if not "shadingMode" in mesh.attrib:
@@ -365,6 +372,9 @@ for tri in objects.iterfind("Triangle"):
         mat_id = new_mat_id
         materials[mat_id].find("DiffuseReflectance").attrib["tex_id"] = str(texture_id)
         materials[mat_id].find("DiffuseReflectance").attrib["tex_mode"] = str(textures[texture_id].decal_mode)
+        if isinstance(textures[texture_id], image_data):
+            if textures[texture_id].is_bump:
+                materials[mat_id].attrib["shader"] = "bump"
 
     new_elem = add_mesh(mat_id, faces, texture_id)
 

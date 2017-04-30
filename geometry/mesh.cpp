@@ -133,6 +133,7 @@ namespace geometry
         auto tri_index = data.tri - tris.data();
         glm::vec3 normal = data.tri->get_normal();
         glm::vec2 uv = {};
+        glm::vec3 dpdu, dpdv;
 
         if (vert_normals.size())
         {
@@ -152,9 +153,26 @@ namespace geometry
             uv= uv_1 * data.alpha +
                 uv_2 * data.beta +
                 uv_3 * data.gamma;
+
+            auto d2 = uv_2 - uv_1;
+            auto d3 = uv_3 - uv_1;
+
+            auto dp2 = tris[tri_index].verts.b - tris[tri_index].verts.a;
+            auto dp3 = tris[tri_index].verts.c - tris[tri_index].verts.a;
+
+            dpdu = {d2.x * dp2 + d2.y * dp3};
+            dpdv = {d3.x * dp2 + d3.y * dp3};
         }
 
-        return physics::ray_hit{ this, ray, mat, ray.origin + ray.dir * parameter, normal, parameter, uv };
+        auto other_normal = glm::normalize(glm::cross(dpdv, dpdu));
+
+        auto diff = glm::dot(other_normal, normal);
+        if (diff < 0.99)
+        {
+            std::cerr << "problem\n";
+        }
+
+        return physics::ray_hit{ this, ray, mat, ray.origin + ray.dir * parameter, normal, parameter, uv, dpdu, dpdv };
     }
 
     mesh::~mesh() noexcept = default;

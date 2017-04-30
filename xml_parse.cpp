@@ -26,6 +26,7 @@
 #include <materials/mirror_material.h>
 #include <materials/glass.h>
 #include <materials/metal.hpp>
+#include <materials/bump.hpp>
 
 #include <boost/gil/extension/io/jpeg_io.hpp>
 #include <boost/gil/extension/io/png_io.hpp>
@@ -378,6 +379,17 @@ namespace {
         return { base_mat, ref };
     }
 
+    rtr::shading::bump read_bump_mat(const xml::XMLElement* elem, const std::map<uint16_t, rtr::texturing::sampler2d*> texs)
+    {
+        auto get_text = [&](const char *name) {
+            return elem->FirstChildElement(name)->GetText();
+        };
+
+        auto base_mat = read_rt_material(elem, texs);
+
+        return { new rtr::rt_mat(base_mat), base_mat.get_sampler() };
+    }
+
     rtr::shading::metal read_metal_mat(const xml::XMLElement* elem, const std::map<uint16_t, rtr::texturing::sampler2d*> texs)
     {
         auto get_text = [&](const char *name) {
@@ -438,6 +450,11 @@ namespace {
         } else if (elem->Attribute("shader") == std::string("metal"))
         {
             auto ret = new rtr::shading::metal(read_metal_mat(elem, samplers));
+            ret->id = elem->Int64Attribute("id");
+            return ret;
+        } else if (elem->Attribute("shader") == std::string("bump"))
+        {
+            auto ret = new rtr::shading::bump(read_bump_mat(elem, samplers));
             ret->id = elem->Int64Attribute("id");
             return ret;
         }

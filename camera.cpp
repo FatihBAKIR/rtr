@@ -127,12 +127,12 @@ namespace rtr {
             glm::vec3 fin_color = {};
             bool any_hit = false;
 
-            for (int i = 0; i < cam.sample_count; ++i)
+            for (int j = 0; j < cam.sample_count; ++j)
             {
-                auto pos = rtr::random_point(get_cam_pos(cam_ids[i]), cam_basis, cam_deviate);
-                ray r(pos, glm::normalize(rtr::random_point(get_sample_pos(ms_ids[i]), pix_basis, pix_deviate) - pos));
+                auto pos = rtr::random_point(get_cam_pos(cam_ids[j]), cam_basis, cam_deviate);
+                ray r(pos, glm::normalize(rtr::random_point(get_sample_pos(ms_ids[j]), pix_basis, pix_deviate) - pos));
                 r.rtl = scene.get_rtl();
-                r.ms_id = i;
+                r.ms_id = j;
 
                 auto res = scene.ray_cast(r);
                 if (res)

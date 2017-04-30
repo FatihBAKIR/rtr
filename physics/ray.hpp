@@ -40,6 +40,7 @@ struct ray_hit
     float parameter;
 
     glm::vec2 uv = {};
+    glm::vec3 dpdu, dpdv;
 };
 }
 }

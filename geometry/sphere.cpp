@@ -58,16 +58,33 @@ namespace geometry
 
         glm::vec3 world_pos = glm::vec3(transform * glm::vec4(pos, 1));
 
-        pos -= this->get_center();
-        glm::vec2 uv = { std::atan2(pos.z, pos.x) / (2 * boost::math::constants::pi<float>()),
-                         std::acos(pos.y / this->radius) / boost::math::constants::pi<float>() };
+        constexpr auto pi = boost::math::constants::pi<float>();
 
-        return { {parameter, {world_pos, normal, uv}} };
+        pos -= this->get_center();
+
+        auto phi = std::atan2(pos.z, pos.x);
+        auto theta = std::acos(pos.y / this->get_radius());
+        glm::vec2 uv = { phi / (2 * pi), theta / pi };
+
+        auto dpdu = glm::vec3{-pos.z * 2 * pi, 0, pos.x * 2 * pi};
+        auto dpdv = glm::vec3{pos.y * pi * std::cos(phi), - get_radius() * pi * std::sin(theta), pos.y * pi * std::sin(phi) };
+        dpdu = glm::vec3((transform) * glm::vec4(dpdu, 0));
+        dpdv = glm::vec3((transform / glm::determinant(transform)) * glm::vec4(dpdv, 0));
+
+        auto other_normal = glm::normalize(glm::cross(dpdu, dpdv));
+
+        auto diff = glm::dot(other_normal, normal);
+        if (diff < 0.99)
+        {
+            std::cerr << "problem\n";
+        }
+
+        return { {parameter, {world_pos, normal, uv, dpdu, dpdv}} };
     }
 
     physics::ray_hit sphere::intersect(const physics::ray& ray, float parameter, const data_t& data) const
     {
-        return physics::ray_hit{ this, ray, mat, data.pos, data.normal, parameter, data.uv };
+        return physics::ray_hit{ this, ray, mat, data.pos, data.normal, parameter, data.uv, data.dpdu, data.dpdv };
     }
 
     physics::aabb sphere::bounding_box() const {

@@ -15,6 +15,8 @@
 
 namespace rtr
 {
+    static constexpr float shadow_epsilon = 0.01f;
+
     glm::vec3 rt_mat::shade(const shading_ctx& ctx) const {
         auto& scene = ctx.scn;
 
@@ -30,9 +32,12 @@ namespace rtr
                 auto len = glm::length(point_to_light);
                 auto normalized_ptol = point_to_light / len;
 
-                auto shadow_ray = physics::ray(ctx.hit.position + 0.001f * normalized_ptol, normalized_ptol);
-                auto res = scene.ray_cast_param(shadow_ray, -0.001f, len);
-                if (res) return;
+                auto shadow_ray = physics::ray(ctx.hit.position + shadow_epsilon * normalized_ptol, normalized_ptol);
+                auto res = scene.ray_cast_param(shadow_ray, -shadow_epsilon, len);
+                if (res)
+                {
+                    return;
+                }
 
                 auto light_intensity = pl->intensity_at(ctx.hit.position);
                 auto diffuse_coeff = std::max(0.0f, glm::dot(normal, normalized_ptol));
@@ -50,8 +55,8 @@ namespace rtr
                 auto len = glm::length(point_to_light);
                 auto normalized_ptol = point_to_light / len;
 
-                auto shadow_ray = physics::ray(ctx.hit.position + 0.001f * normalized_ptol, normalized_ptol);
-                auto res = scene.ray_cast_param(shadow_ray, -0.001f, len);
+                auto shadow_ray = physics::ray(ctx.hit.position + shadow_epsilon * normalized_ptol, normalized_ptol);
+                auto res = scene.ray_cast_param(shadow_ray, -shadow_epsilon, len);
                 if (res) return;
 
                 auto light_intensity = al->intensity_at(ctx.hit.r.ms_id, ctx.hit.position);
@@ -70,8 +75,8 @@ namespace rtr
                 auto len = glm::length(point_to_light);
                 auto normalized_ptol = point_to_light / len;
 
-                auto shadow_ray = physics::ray(ctx.hit.position + 0.001f * normalized_ptol, normalized_ptol);
-                auto res = scene.ray_cast_param(shadow_ray, -0.001f, len);
+                auto shadow_ray = physics::ray(ctx.hit.position + shadow_epsilon * normalized_ptol, normalized_ptol);
+                auto res = scene.ray_cast_param(shadow_ray, -shadow_epsilon, len);
                 if (res) return;
 
                 auto light_intensity = dl->intensity_at(ctx.hit.position);
@@ -92,13 +97,15 @@ namespace rtr
             return this->diffuse_sampler->sample(tex_pos) * 255.f;
         }
 
+        glm::vec3 c;
         scene.for_lights(light_handler);
         switch (mode)
         {
         case decal_mode::replace:
             break;
         case decal_mode::coeff:
-            diffuse *= this->diffuse_sampler->sample(tex_pos);
+            c = this->diffuse_sampler->sample(tex_pos);
+            diffuse *= c;
             break;
         case decal_mode::blend:
             diffuse *= (this->diffuse_sampler->sample(tex_pos) + this->diffuse) * 0.5f;

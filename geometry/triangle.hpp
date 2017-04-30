@@ -34,6 +34,7 @@ namespace geometry
 
     class triangle
     {
+        friend class mesh;
         struct tri_corners
         {
             glm::vec3 a;
