@@ -62,4 +62,9 @@ namespace rtr {
         class area_light;
         class directional_light;
     }
+
+    namespace brdf
+    {
+        class phong;
+    }
 }

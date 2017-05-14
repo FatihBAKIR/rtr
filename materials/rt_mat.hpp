@@ -10,7 +10,6 @@
 
 namespace rtr
 {
-
     class rt_mat : public material
     {
     public:
@@ -28,6 +27,7 @@ namespace rtr
         glm::vec3 shade(const shading_ctx& ctx) const override final;
 
         const texturing::sampler2d* get_sampler() const { return diffuse_sampler; }
+
     private:
         decal_mode mode;
         const texturing::sampler2d* diffuse_sampler;
