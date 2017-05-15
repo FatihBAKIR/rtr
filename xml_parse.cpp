@@ -34,6 +34,11 @@
 
 #include <texturing/tex2d.hpp>
 #include <texturing/perlin2d.hpp>
+#include <brdf/brdf_common.hpp>
+#include <brdf/phong_brdf.hpp>
+#include <brdf/blinn_phong_brdf.hpp>
+#include <brdf/torrance_sparrow.hpp>
+#include <materials/brdf_mat.hpp>
 
 namespace xml = tinyxml2;
 namespace {
@@ -424,7 +429,119 @@ namespace {
         return { ref, index };
     }
 
-    rtr::material *read_material(const xml::XMLElement *elem, const std::unordered_map<long, rtr::material *> &mats, const std::map<uint16_t, rtr::texturing::sampler2d*> samplers) {
+    rtr::brdf::brdf_data parse_data(const xml::XMLElement* elem)
+    {
+        auto get_text = [&](const char *name) {
+            return elem->FirstChildElement(name)->GetText();
+        };
+
+        glm::vec3 diffuse, specular, ambient;
+        std::istringstream iss(get_text("AmbientReflectance"));
+        iss >> ambient[0] >> ambient[1] >> ambient[2];
+
+        iss = std::istringstream(get_text("DiffuseReflectance"));
+        iss >> diffuse[0] >> diffuse[1] >> diffuse[2];
+
+        iss = std::istringstream(get_text("SpecularReflectance"));
+        iss >> specular[0] >> specular[1] >> specular[2];
+
+        return {diffuse, specular, ambient};
+    }
+
+    namespace parser
+    {
+        namespace brdf
+        {
+            using namespace rtr::brdf;
+            phong read_phong(const xml::XMLElement* elem)
+            {
+                auto phong = elem->FirstChildElement("Exponent")->FloatText(0);
+                return {phong};
+            }
+
+            phong_modified read_phong_modified(const xml::XMLElement* elem)
+            {
+                auto phong = elem->FirstChildElement("Exponent")->FloatText(0);
+                return {phong};
+            }
+
+            phong_modified_normalized read_phong_modified_norm(const xml::XMLElement* elem)
+            {
+                auto phong = elem->FirstChildElement("Exponent")->FloatText(0);
+                return {phong};
+            }
+
+            blinn_phong read_blinn_phong(const xml::XMLElement* elem)
+            {
+                auto phong = elem->FirstChildElement("Exponent")->FloatText(0);
+                return {phong};
+            }
+
+            blinn_phong_modified read_blinn_phong_modified(const xml::XMLElement* elem)
+            {
+                auto phong = elem->FirstChildElement("Exponent")->FloatText(0);
+                return {phong};
+            }
+
+            blinn_phong_modified_normalized read_blinn_phong_modified_norm(const xml::XMLElement* elem)
+            {
+                auto phong = elem->FirstChildElement("Exponent")->FloatText(0);
+                return {phong};
+            }
+
+            torrance_sparrow read_torrence(const xml::XMLElement* elem)
+            {
+                auto phong = elem->FirstChildElement("Exponent")->FloatText(0);
+                return {phong};
+            }
+        }
+    }
+
+    rtr::material* read_brdf_mat(const xml::XMLElement* elem)
+    {
+        auto data = parse_data(elem);
+
+        if (elem->Attribute("brdf") == std::string("OriginalPhong"))
+        {
+            return rtr::shading::make_brdf(data, parser::brdf::read_phong(elem));
+        }
+
+        if (elem->Attribute("brdf") == std::string("ModifiedPhong"))
+        {
+            return rtr::shading::make_brdf(data, parser::brdf::read_phong_modified(elem));
+        }
+
+        if (elem->Attribute("brdf") == std::string("ModifiedPhongNorm"))
+        {
+            return rtr::shading::make_brdf(data, parser::brdf::read_phong_modified_norm(elem));
+        }
+
+        if (elem->Attribute("brdf") == std::string("OriginalBlinnPhong"))
+        {
+            return rtr::shading::make_brdf(data, parser::brdf::read_blinn_phong(elem));
+        }
+
+        if (elem->Attribute("brdf") == std::string("ModifiedBlinnPhong"))
+        {
+            return rtr::shading::make_brdf(data, parser::brdf::read_blinn_phong_modified(elem));
+        }
+
+        if (elem->Attribute("brdf") == std::string("ModifiedBlinnPhongNorm"))
+        {
+            return rtr::shading::make_brdf(data, parser::brdf::read_blinn_phong_modified_norm(elem));
+        }
+
+        if (elem->Attribute("brdf") == std::string("TorranceSparrow"))
+        {
+            return rtr::shading::make_brdf(data, parser::brdf::read_torrence(elem));
+        }
+
+        throw std::runtime_error("brdf not supported");
+    }
+
+    rtr::material *read_material(const xml::XMLElement *elem,
+            const std::unordered_map<long, rtr::material *> &mats,
+            const std::map<uint16_t, rtr::texturing::sampler2d*> samplers) {
         if (elem->Attribute("shader") == nullptr || elem->Attribute("shader") == std::string("ceng795")) {
             auto m = new rtr::rt_mat(read_rt_material(elem, samplers));
             m->id = elem->Int64Attribute("id");
@@ -455,6 +572,11 @@ namespace {
         } else if (elem->Attribute("shader") == std::string("bump"))
         {
             auto ret = new rtr::shading::bump(read_bump_mat(elem, samplers));
+            ret->id = elem->Int64Attribute("id");
+            return ret;
+        } else if (elem->Attribute("shader") == std::string("brdf"))
+        {
+            auto ret = read_brdf_mat(elem);
             ret->id = elem->Int64Attribute("id");
             return ret;
         }

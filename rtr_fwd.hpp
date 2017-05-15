@@ -19,6 +19,8 @@ namespace rtr {
         class mirror_material;
         class glass;
         class bump;
+
+        template <class> class brdf_mat;
     }
 
     struct vertex;
@@ -66,5 +68,13 @@ namespace rtr {
     namespace brdf
     {
         class phong;
+        class phong_modified;
+        class phong_modified_normalized;
+
+        class blinn_phong;
+        class blinn_phong_modified;
+        class blinn_phong_modified_normalized;
+
+        class torrance_sparrow;
     }
 }

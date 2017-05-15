@@ -9,6 +9,8 @@
 #include <physics/ray.hpp>
 
 #include <brdf/phong_brdf.hpp>
+#include <brdf/blinn_phong_brdf.hpp>
+#include <brdf/torrance_sparrow.hpp>
 
 #include <utility.hpp>
 
@@ -36,8 +38,9 @@ namespace shading
             auto shadow_ray = physics::ray(ctx.hit.position + shadow_epsilon * normalized_ptol, normalized_ptol);
             if (scene.ray_cast_param(shadow_ray, -shadow_epsilon, len)) { return; }
 
-            brdf::brdf_ctx b_ctx;
-            output += brdf.calculate(&data, &b_ctx);
+            brdf::brdf_ctx b_ctx {ctx, normalized_ptol};
+            auto brdf_res = brdf.calculate(&data, &b_ctx);
+            output += brdf_res * light_intensity;
         };
 
         auto light_handler = make_lambda_visitor<void>(
@@ -64,5 +67,13 @@ namespace shading
     }
 
     template class brdf_mat<brdf::phong>;
+    template class brdf_mat<brdf::phong_modified>;
+    template class brdf_mat<brdf::phong_modified_normalized>;
+
+    template class brdf_mat<brdf::blinn_phong>;
+    template class brdf_mat<brdf::blinn_phong_modified>;
+    template class brdf_mat<brdf::blinn_phong_modified_normalized>;
+
+    template class brdf_mat<brdf::torrance_sparrow>;
 }
 }

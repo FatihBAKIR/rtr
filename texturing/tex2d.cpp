@@ -3,6 +3,7 @@
 //
 
 #include "tex2d.hpp"
+#include <algorithm>
 
 namespace rtr
 {

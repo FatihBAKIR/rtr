@@ -169,7 +169,7 @@ namespace geometry
         auto diff = glm::dot(other_normal, normal);
         if (diff < 0.99)
         {
-            std::cerr << "problem\n";
+            //std::cerr << "problem\n";
         }
 
         return physics::ray_hit{ this, ray, mat, ray.origin + ray.dir * parameter, normal, parameter, uv, dpdu, dpdv };

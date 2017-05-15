@@ -131,8 +131,34 @@ for tex in textures:
 materials = {}
 custom_mat_id = 1000
 
+class BRDF():
+    name = ""
+    params = {}
+
+brdfs = {}
+
+for brdf in root.find("BRDFs"):
+    b = BRDF()
+    b.name = brdf.tag
+    if "normalized" in brdf.attrib:
+        b.name += "Norm"
+    for param in brdf:
+        b.params[param.tag] = param.text
+
+    brdfs[brdf.attrib["id"]] = b
+
 for mat in root.find("Materials"):
     if "shader" in mat.attrib:
+        new_mats.append(copy.deepcopy(mat))
+        continue
+
+    if "BRDF" in mat.attrib:
+        brdf = brdfs[mat.attrib["BRDF"]]
+        del mat.attrib["BRDF"]
+        mat.attrib["shader"] = "brdf"
+        mat.attrib["brdf"] = brdf.name
+        for param_name in brdf.params:
+            etree.SubElement(mat, param_name).text = brdf.params[param_name]
         new_mats.append(copy.deepcopy(mat))
         continue
 
