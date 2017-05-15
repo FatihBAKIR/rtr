@@ -13,12 +13,12 @@
 #include <brdf/torrance_sparrow.hpp>
 
 #include <utility.hpp>
+#include <iostream>
 
 namespace rtr
 {
 namespace shading
 {
-    static constexpr float shadow_epsilon = 0.01f;
 
     template <class BrdfT>
     glm::vec3 brdf_mat<BrdfT>::shade(const shading_ctx& ctx) const
@@ -27,13 +27,12 @@ namespace shading
 
         glm::vec3 ambient = scene.get_ambient().intensity_at(ctx.hit.position) * data.ambient;
 
-        glm::vec3 output = {};
+        glm::vec3 output = {0, 0, 0};
 
         auto per_light = [&](const auto& point_to_light, const auto& light_intensity)
         {
             auto len = glm::length(point_to_light);
             auto normalized_ptol = point_to_light / len;
-            auto& normal = ctx.hit.normal;
 
             auto shadow_ray = physics::ray(ctx.hit.position + shadow_epsilon * normalized_ptol, normalized_ptol);
             if (scene.ray_cast_param(shadow_ray, -shadow_epsilon, len)) { return; }

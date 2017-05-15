@@ -35,7 +35,7 @@ namespace rtr {
             auto param = determinant(a_c1, a_c2, b) * one_over;
             auto alpha = 1 - beta - gamma;
 
-            if (beta < -0.0001 || gamma < -0.0001 || alpha < -0.0001 || param < -0.0001)
+            if (beta < -intersection_epsilon || gamma < -intersection_epsilon || alpha < -intersection_epsilon || param < -intersection_epsilon)
             {
                 return {};
             }

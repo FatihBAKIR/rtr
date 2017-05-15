@@ -21,9 +21,9 @@ namespace brdf
         auto half = normalize(ctx->s_ctx.view_dir + ctx->normal_ptol);
 
         auto cos_theta_h = std::max(0.f, dot(half, ctx->s_ctx.hit.normal));
-        auto cos_theta_o = std::max(0.f, dot(ctx->s_ctx.view_dir, ctx->s_ctx.hit.normal));
-        auto cos_theta_i = std::max(0.f, dot(ctx->normal_ptol, ctx->s_ctx.hit.normal));
-        auto cos_alpha_h = std::max(0.f, dot(half, ctx->s_ctx.view_dir));
+        auto cos_theta_o = dot(ctx->s_ctx.view_dir, ctx->s_ctx.hit.normal);
+        auto cos_theta_i = dot(ctx->normal_ptol, ctx->s_ctx.hit.normal);
+        auto cos_alpha_h = dot(half, ctx->s_ctx.view_dir);
 
         auto G = std::min({
             1.f,

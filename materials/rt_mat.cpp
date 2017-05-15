@@ -15,8 +15,6 @@
 
 namespace rtr
 {
-    static constexpr float shadow_epsilon = 0.01f;
-
     glm::vec3 rt_mat::shade(const shading_ctx& ctx) const {
         auto& scene = ctx.scn;
 

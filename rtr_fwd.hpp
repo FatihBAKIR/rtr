@@ -2,6 +2,8 @@
 // Created by Mehmet Fatih BAKIR on 26/02/2017.
 //
 
+#pragma once
+
 #include <boost/container/container_fwd.hpp>
 
 namespace rtr {
@@ -77,4 +79,7 @@ namespace rtr {
 
         class torrance_sparrow;
     }
+
+    constexpr float intersection_epsilon = 1e-4;
+    constexpr float shadow_epsilon = 6e-4;
 }

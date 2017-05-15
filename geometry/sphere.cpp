@@ -30,14 +30,14 @@ namespace geometry
 
         float delta = B * B - 4 * C;
 
-        if (delta < 0)
+        if (delta < -intersection_epsilon)
         {
             return {};
         }
 
         float root = minus_B - std::sqrt(delta);
 
-        if (root < 0)
+        if (root < -intersection_epsilon)
         {
             if (!SphereInsideCollision)
             {
@@ -45,7 +45,7 @@ namespace geometry
             }
             root = minus_B + std::sqrt(delta);
 
-            if (root < 0)
+            if (root < -intersection_epsilon)
             {
                 return {};
             }
