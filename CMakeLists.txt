@@ -39,7 +39,7 @@ if (CMAKE_C_COMPILER_ID MATCHES "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -static-libgcc")
 endif()
 
-set (LIGHT_FILES lights/point_light.hpp lights/ambient_light.hpp lights/spot_light.hpp)
+set (LIGHT_FILES lights/point_light.hpp lights/ambient_light.hpp lights/spot_light.hpp materials/illuminating.cpp materials/illuminating.hpp)
 set (GEOMETRY_FILES
         geometry/mesh.hpp geometry/mesh.cpp
         geometry/sphere.hpp geometry/sphere.cpp

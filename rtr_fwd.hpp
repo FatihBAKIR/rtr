@@ -21,6 +21,7 @@ namespace rtr {
         class mirror_material;
         class glass;
         class bump;
+        class illuminating;
 
         template <class> class brdf_mat;
     }
@@ -82,4 +83,6 @@ namespace rtr {
 
     constexpr float intersection_epsilon = 1e-4;
     constexpr float shadow_epsilon = 6e-4;
+
+    extern thread_local int max_ms;
 }

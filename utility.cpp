@@ -6,6 +6,10 @@
 #include <ostream>
 #include <random>
 #include <glm/glm.hpp>
+#include <boost/math/constants/constants.hpp>
+#include <cmath>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 namespace glm
 {
@@ -17,6 +21,7 @@ namespace glm
 
 namespace rtr
 {
+    static constexpr auto pi = boost::math::constants::pi<float>();
     static std::mt19937 rng;
     glm::vec3 random_point(const glm::vec3& around, const std::array<glm::vec3, 3>& a, const std::array<float, 3>& ranges)
     {
@@ -38,6 +43,38 @@ namespace rtr
             res = glm::cross(dir, glm::vec3(0, 1, 0));
         }
         return res;
+    }
+
+    glm::vec3 sample_hemisphere(int ms_id, int max_ms)
+    {
+        static std::uniform_real_distribution<float> dist1(0, 1);
+        static std::uniform_real_distribution<float> dist2(0, 1);
+        auto ksi1 = dist1(rng);
+        auto ksi2 = dist2(rng);
+
+        /*ksi1 = lerp(float(ms_id) / max_ms, float(ms_id + 1) / max_ms, ksi1);
+        ksi2 = lerp(float(ms_id) / max_ms, float(ms_id + 1) / max_ms, ksi2);*/
+
+        auto v = glm::vec3(
+            std::cos(2 * pi * ksi2) * std::sqrt(1 - ksi1 * ksi1),
+            ksi1,
+            std::sin(2 * pi * ksi2) * std::sqrt(1 - ksi2 * ksi2));
+        return v;
+    }
+
+    glm::vec3 sample_hemisphere(const glm::vec3& towards, int ms_id, int max_ms)
+    {
+        auto base_sample = sample_hemisphere(ms_id, max_ms);
+        if (towards == glm::vec3(0, -1, 0))
+        {
+            return -base_sample;
+        }
+
+        auto axis = glm::cross(glm::vec3(0, 1, 0), towards);
+        auto angle = std::acos(glm::dot(towards, glm::vec3(0, 1, 0)));
+
+        auto rotate = glm::angleAxis(angle, axis);
+        return rotate * base_sample;
     }
 }
 

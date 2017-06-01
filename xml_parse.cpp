@@ -39,6 +39,8 @@
 #include <brdf/blinn_phong_brdf.hpp>
 #include <brdf/torrance_sparrow.hpp>
 #include <materials/brdf_mat.hpp>
+#include <materials/illuminating.hpp>
+#include <fstream>
 
 namespace xml = tinyxml2;
 namespace {
@@ -217,7 +219,7 @@ namespace {
         if (app_elem == std::string("0")) m = rtr::texturing::sampling_mode::nearest_neighbour;
         else if (app_elem == std::string("1")) m = rtr::texturing::sampling_mode::bilinear;
 
-        boost::gil::jpeg_read_image(p, im);
+        boost::gil::png_read_image(p, im);
         auto view = boost::gil::view (im);
 
         assert(view.is_1d_traversable());
@@ -339,8 +341,11 @@ namespace {
         iss = std::istringstream(get_text("SpecularReflectance"));
         iss >> specular[0] >> specular[1] >> specular[2];
 
-        auto phong = elem->FirstChildElement("PhongExponent")->FloatText(0);
-
+        float phong = 0;
+        if (elem->FirstChildElement("PhongExponent"))
+        {
+            phong = elem->FirstChildElement("PhongExponent")->FloatText(0);
+        }
 
         auto dif_elem = elem->FirstChildElement("DiffuseReflectance");
         int id;
@@ -427,6 +432,21 @@ namespace {
         index = elem->FirstChildElement("RefractionIndex")->FloatText();
 
         return { ref, index };
+    }
+
+    rtr::shading::illuminating read_illum_data(const xml::XMLElement* elem)
+    {
+        float index;
+
+        auto get_text = [&](const char *name) {
+            return elem->FirstChildElement(name)->GetText();
+        };
+
+        glm::vec3 ref;
+        auto iss = std::istringstream(get_text("Radiance"));
+        iss >> ref[0] >> ref[1] >> ref[2];
+
+        return { ref };
     }
 
     rtr::brdf::brdf_data parse_data(const xml::XMLElement* elem)
@@ -579,12 +599,41 @@ namespace {
             auto ret = read_brdf_mat(elem);
             ret->id = elem->Int64Attribute("id");
             return ret;
+        } else if (elem->Attribute("shader") == std::string("illuminating"))
+        {
+            auto ret = new rtr::shading::illuminating(read_illum_data(elem));
+            ret->id = elem->Int64Attribute("id");
+            return ret;
         }
         throw std::runtime_error("shader not supported");
     }
 
     rtr::bvector<glm::vec3> parse_vector_buffer(const xml::XMLElement *elem) {
         rtr::bvector<glm::vec3> vert_pos;
+        auto bin_file = elem->Attribute("binaryFile");
+        if (bin_file)
+        {
+            std::ifstream inf(bin_file, std::ios::binary);
+
+            assert(inf.good());
+
+            uint32_t len;
+            inf.read(reinterpret_cast<char*>(&len), sizeof(len));
+
+            std::cout << len << '\n';
+
+            for (int i = 0; i < len; ++i)
+            {
+                glm::vec3 v;
+                inf.read(reinterpret_cast<char*>(&v[0]), sizeof(v[0]));
+                inf.read(reinterpret_cast<char*>(&v[1]), sizeof(v[1]));
+                inf.read(reinterpret_cast<char*>(&v[2]), sizeof(v[2]));
+                vert_pos.push_back(v);
+            }
+
+            return vert_pos;
+        }
+
         auto vert_text = elem->GetText();
         auto iss = std::istringstream(vert_text);
         for (glm::vec3 v; iss >> v[0] >> v[1] >> v[2];) {
@@ -595,6 +644,30 @@ namespace {
 
     rtr::bvector<glm::vec2> parse_uvector_buffer(const xml::XMLElement *elem) {
         rtr::bvector<glm::vec2> vert_pos;
+
+        auto bin_file = elem->Attribute("binaryFile");
+        if (bin_file)
+        {
+            std::ifstream inf(bin_file, std::ios::binary);
+
+            assert(inf.good());
+
+            uint32_t len;
+            inf.read(reinterpret_cast<char*>(&len), sizeof(len));
+
+            std::cout << len << '\n';
+
+            for (int i = 0; i < len; ++i)
+            {
+                glm::vec2 v;
+                inf.read(reinterpret_cast<char*>(&v[0]), sizeof(v[0]));
+                inf.read(reinterpret_cast<char*>(&v[1]), sizeof(v[1]));
+                vert_pos.push_back(v);
+            }
+
+            return vert_pos;
+        }
+
         auto vert_text = elem->GetText();
         auto iss = std::istringstream(vert_text);
         for (glm::vec2 v; iss >> v[0] >> v[1];) {
@@ -605,6 +678,31 @@ namespace {
 
     rtr::bvector<int> parse_index_buffer(const xml::XMLElement *elem) {
         rtr::bvector<int> vert_pos;
+
+        auto bin_file = elem->Attribute("binaryFile");
+        if (bin_file)
+        {
+            std::ifstream inf(bin_file, std::ios::binary);
+
+            assert(inf.good());
+
+            uint32_t len;
+            inf.read(reinterpret_cast<char*>(&len), sizeof(len));
+
+            std::cout << len << '\n';
+
+            for (int i = 0; i < len; ++i)
+            {
+                int v[3];
+                inf.read(reinterpret_cast<char*>(&v[0]), sizeof(v[0]));
+                inf.read(reinterpret_cast<char*>(&v[1]), sizeof(v[1]));
+                inf.read(reinterpret_cast<char*>(&v[2]), sizeof(v[2]));
+                vert_pos.insert(vert_pos.end(), std::begin(v), std::end(v));
+            }
+
+            return vert_pos;
+        }
+
         auto vert_text = elem->GetText();
         auto iss = std::istringstream(vert_text);
         for (int v; iss >> v;) {

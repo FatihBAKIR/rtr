@@ -54,6 +54,15 @@ lambda_visitor<ReturnType, Lambdas...> make_lambda_visitor(Lambdas... lambdas) {
 
 namespace rtr
 {
+    template <class T>
+    auto lerp(const T& a, const T& b, float t)
+    {
+        return (1 - t) * a + t * b;
+    }
+
     glm::vec3 random_point(const glm::vec3& around, const std::array<glm::vec3, 3>& a, const std::array<float, 3>& ranges);
     glm::vec3 get_normal(const glm::vec3& dir);
+
+    glm::vec3 sample_hemisphere(int ms_id, int max_ms);
+    glm::vec3 sample_hemisphere(const glm::vec3& towards,int ms_id, int max_ms);
 }

@@ -1,8 +1,11 @@
 import sys
 import copy
+import os
 import xml.etree.ElementTree as etree
 
 tree = etree.parse(sys.argv[1])
+file_dir = os.path.dirname(sys.argv[1])
+
 root = tree.getroot()
 
 converted_root = etree.Element("Scene")
@@ -108,7 +111,7 @@ def parse_texture(elem):
     else:
         res = image_data()
         res.sampling = sampling_mode.Nearest if elem.find("Interpolation").text == "nearest" else sampling_mode.Bilinear
-        res.path = elem.find("ImageName").text
+        res.path = os.path.realpath(os.path.join(file_dir, elem.find("ImageName").text))
         res.scaling = 255
         res.is_bump = ("bumpmap" in elem.attrib and elem.attrib["bumpmap"] == "true")
 
@@ -137,15 +140,16 @@ class BRDF():
 
 brdfs = {}
 
-for brdf in root.find("BRDFs"):
-    b = BRDF()
-    b.name = brdf.tag
-    if "normalized" in brdf.attrib:
-        b.name += "Norm"
-    for param in brdf:
-        b.params[param.tag] = param.text
+if root.find("BRDFs") is not None:
+    for brdf in root.find("BRDFs"):
+        b = BRDF()
+        b.name = brdf.tag
+        if "normalized" in brdf.attrib:
+            b.name += "Norm"
+        for param in brdf:
+            b.params[param.tag] = param.text
 
-    brdfs[brdf.attrib["id"]] = b
+        brdfs[brdf.attrib["id"]] = b
 
 for mat in root.find("Materials"):
     if "shader" in mat.attrib:
@@ -162,8 +166,8 @@ for mat in root.find("Materials"):
         new_mats.append(copy.deepcopy(mat))
         continue
 
-    if not mat.find("refractionindex") is None:
-        if not mat.find("refractionindex").text == "1" and not mat.find("transparency") == "0 0 0":
+    if not mat.find("RefractionIndex") is None:
+        if not mat.find("RefractionIndex").text == "1" and not mat.find("transparency") == "0 0 0":
             mat.attrib["shader"] = "glass"
             new_mats.append(copy.deepcopy(mat))
             continue
@@ -187,28 +191,54 @@ for mat in root.find("Materials"):
 def group(lst, n):
     return zip(*[lst[i::n] for i in range(n)])
 
+buffers = etree.SubElement(converted_root, "Buffers")
+
 vertexdata_text = root.find("VertexData").text
-vertex_pos = [float(x) for x in vertexdata_text.split()]
-vertices = group(vertex_pos, 3)
+vertices = None
+if "binaryFile" not in root.find("VertexData").attrib:
+    vertex_pos = [float(x) for x in vertexdata_text.split()]
+    vertices = group(vertex_pos, 3)
+else:
+    buf = etree.SubElement(buffers, "VertexBuffer")
+    buf.attrib["id"] = "0"
+    buf.attrib["binaryFile"] = os.path.realpath(os.path.join(file_dir, root.find("VertexData").attrib["binaryFile"]))
 
 uvs = None
 if not root.find("TexCoordData") is None:
-    uv_data_text = root.find("TexCoordData").text
-    uv_pos = [float(x) for x in uv_data_text.split()]
-    uvs = group(uv_pos, 2)
-
-buffers = etree.SubElement(converted_root, "Buffers")
+    if "binaryFile" not in root.find("TexCoordData").attrib:
+        uv_data_text = root.find("TexCoordData").text
+        uv_pos = [float(x) for x in uv_data_text.split()]
+        uvs = group(uv_pos, 2)
+    else:
+        buf = etree.SubElement(buffers, "UVertexBuffer")
+        buf.attrib["id"] = "0"
+        buf.attrib["binaryFile"] = os.path.realpath(os.path.join(file_dir, root.find("TexCoordData").attrib["binaryFile"]))
 
 next_v_buf_id = 0
 next_i_buf_id = 0
 
-scn_max = map(max, zip(*vertices))
-scn_min = map(min, zip(*vertices))
+scn_min, scn_max = (0, 0, 0), (0, 0, 0)
+if vertices is not None:
+    scn_max = map(max, zip(*vertices))
+    scn_min = map(min, zip(*vertices))
 
 scn_center =[sum(x) / 2 for x in zip(scn_min, scn_max)]
 scn_extent =[max(0.01, y - x) for (x, y) in zip(scn_min, scn_max)]
 
 max_radius = 0
+
+def add_binary_mesh_data(v_buffer, i_buffer, uv = None):
+    ibuf = etree.SubElement(buffers, "IndexBuffer")
+    ibuf.attrib["binaryFile"] = os.path.realpath(os.path.join(file_dir, i_buffer))
+
+    global next_i_buf_id
+
+    i_buf_id = next_i_buf_id
+    next_i_buf_id += 1
+
+    ibuf.attrib["id"] = str(i_buf_id)
+
+    return (0, i_buf_id, 0)
 
 def add_mesh_data(v_buffer, i_buffer, uv = None):
     vbuf = etree.SubElement(buffers, "VertexBuffer")
@@ -285,42 +315,46 @@ def add_mesh(mat_id, face_elem, tex_id = None):
     new_elem = etree.Element("Mesh")
     etree.SubElement(new_elem, "Material").text = str(mat_id)
 
-    v_offset = int(face_elem.attrib["vertexOffset"])
-    face_indices = [int(x) + v_offset for x in face_elem.text.split()]
-    faces = group(face_indices, 3)
+    v_id, i_id, uv_id = None, None, None
+    if "binaryFile" not in face_elem.attrib:
+        v_offset = int(face_elem.attrib["vertexOffset"])
+        face_indices = [int(x) + v_offset for x in face_elem.text.split()]
+        faces = group(face_indices, 3)
 
-    used_vertices = []
-    mapping = {}
+        used_vertices = []
+        mapping = {}
 
-    indices = set(face_indices)
+        indices = set(face_indices)
 
-    for index in indices:
-        mapping[index] = len(used_vertices)
-        used_vertices.append(vertices[index - 1])
+        for index in indices:
+            mapping[index] = len(used_vertices)
+            used_vertices.append(vertices[index - 1])
 
-    faces = map(lambda (a, b, c): (mapping[a], mapping[b], mapping[c]), faces)
+        faces = map(lambda (a, b, c): (mapping[a], mapping[b], mapping[c]), faces)
 
-    used_uvs = None
-    if not tex_id is None and not isinstance(textures[tex_id], perlin_data):
-        uv_offset = 0
-        if ("textureOffset" in face_elem.attrib):
-            uv_offset = int(face_elem.attrib["textureOffset"])
-        uv_indices = [int(x) + uv_offset for x in face_elem.text.split()]
-        uv_faces = group(uv_indices, 2)
+        used_uvs = None
+        if not tex_id is None and not isinstance(textures[tex_id], perlin_data):
+            uv_offset = 0
+            if ("textureOffset" in face_elem.attrib):
+                uv_offset = int(face_elem.attrib["textureOffset"])
+            uv_indices = [int(x) + uv_offset for x in face_elem.text.split()]
+            uv_faces = group(uv_indices, 2)
 
-        uv_mapping = {}
-        used_uvs = []
+            uv_mapping = {}
+            used_uvs = []
 
-        uv_indices = set(uv_indices)
-        for index in uv_indices:
-            uv_mapping[index] = len(used_uvs)
-            used_uvs.append(uvs[index - 1])
+            uv_indices = set(uv_indices)
+            for index in uv_indices:
+                uv_mapping[index] = len(used_uvs)
+                used_uvs.append(uvs[index - 1])
 
-        face_uvs = map(lambda (a, b): (uv_mapping[a], uv_mapping[b]), uv_faces)
+            face_uvs = map(lambda (a, b): (uv_mapping[a], uv_mapping[b]), uv_faces)
+        else:
+            tex_id = None
+
+        (v_id, i_id, uv_id) = add_mesh_data(used_vertices, faces, used_uvs)
     else:
-        tex_id = None
-
-    (v_id, i_id, uv_id) = add_mesh_data(used_vertices, faces, used_uvs)
+        (v_id, i_id, uv_id) = add_binary_mesh_data(0, face_elem.attrib["binaryFile"], face_elem.attrib["binaryFile"])
 
     etree.SubElement(new_elem, "VertexBuffer").attrib["id"] = str(v_id)
     etree.SubElement(new_elem, "IndexBuffer").attrib["id"] = str(i_id)
@@ -331,6 +365,7 @@ def add_mesh(mat_id, face_elem, tex_id = None):
     return new_elem
 
 meshes = {}
+max_mesh_id = 0
 
 for mesh in objects.iterfind("Mesh"):
     faces = mesh.find("Faces")
@@ -366,7 +401,43 @@ for mesh in objects.iterfind("Mesh"):
     else:
         new_elem.append(copy.deepcopy(mesh.find("Transformations")))
 
+    max_mesh_id = max(int(mesh.attrib["id"]), max_mesh_id)
     meshes[mesh.attrib["id"]] = new_elem
+
+    new_objects.append(new_elem)
+
+for lmesh in objects.iterfind("LightMesh"):
+    faces = lmesh.find("Faces")
+
+    if not "vertexOffset" in faces.attrib:
+        faces.attrib["vertexOffset"] = "0"
+
+    mat_id = int(lmesh.find("Material").text)
+
+    new_mat_id = custom_mat_id + 1
+    custom_mat_id = custom_mat_id + 1
+    materials[new_mat_id] = copy.deepcopy(materials[mat_id])
+    materials[new_mat_id].attrib["id"] = str(new_mat_id)
+    mat_id = new_mat_id
+    materials[mat_id].attrib["shader"] = "illuminating"
+    rad_txt = etree.SubElement(materials[mat_id], "Radiance")
+    rad_txt.text = lmesh.find("Radiance").text
+
+    new_elem = add_mesh(mat_id, faces)
+
+    if not "shadingMode" in lmesh.attrib:
+        lmesh.attrib["shadingMode"] = "flat"
+
+    lmesh.attrib["instanced"] = str(False)
+    new_elem.attrib = lmesh.attrib
+
+    if lmesh.find("Transformations") is None:
+        etree.SubElement(new_elem, "Transformations").text = " "
+    else:
+        new_elem.append(copy.deepcopy(lmesh.find("Transformations")))
+
+    lmesh.attrib["id"] = str(max_mesh_id + int(lmesh.attrib["id"]))
+    meshes[lmesh.attrib["id"]]= new_elem
 
     new_objects.append(new_elem)
 

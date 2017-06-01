@@ -22,6 +22,11 @@ namespace rtr {
 
         boost::optional<triangle::param_res_t> triangle::get_parameter(const physics::ray& ray) const
         {
+            if (glm::dot(ray.dir, m_normal) > 0)
+            {
+                return {};
+            }
+
             auto a_c1 = verts.a - verts.b;
             auto a_c2 = verts.a - verts.c;
             auto& a_c3 = ray.dir;

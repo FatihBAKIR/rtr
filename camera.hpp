@@ -73,8 +73,8 @@ private:
     transformation t;
     im_plane plane;
     std::string m_output;
-    std::uint8_t sample_count = 100;
-    std::uint8_t sample_sqrt = 10;
+    std::uint16_t sample_count = 100;
+    std::uint16_t sample_sqrt = 10;
 
     float aperture_size = 0;
 

@@ -31,6 +31,8 @@
 
 namespace rtr {
 
+    thread_local int max_ms;
+
     struct pix_iterator
             : public std::iterator<std::forward_iterator_tag, pix_iterator>
     {
@@ -133,6 +135,7 @@ namespace rtr {
                 ray r(pos, glm::normalize(rtr::random_point(get_sample_pos(ms_ids[j]), pix_basis, pix_deviate) - pos));
                 r.rtl = scene.get_rtl();
                 r.ms_id = j;
+                r.m_backface_cull = true;
 
                 auto res = scene.ray_cast(r);
                 if (res)
@@ -161,6 +164,7 @@ namespace rtr {
     camera::render(const scene &scene) const {
         static auto id = 0;
 
+        max_ms = this->sample_count;
         auto logger = spdlog::stderr_logger_st("camera " + std::to_string(++id));
         logger->info("Rendering with configuration \"{0}\"", render_type::name);
         logger->info("Output file: {0}", m_output);
@@ -199,11 +203,42 @@ namespace rtr {
             render_scanline(*this, row.pix_pos, row.pos, one_down, one_right, scene, v);
         };
 
+        float pix_count = plane.width * plane.height;
+
+        rendered->store(0);
+
+        auto display_thread = std::thread([&]{
+            float progress = 0;
+            std::this_thread::sleep_for(std::chrono::milliseconds(16));
+            while (progress < 1.f)
+            {
+                auto end = std::chrono::high_resolution_clock::now();
+                auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+                float total_time = millis / progress;
+                int remaining = std::floor((total_time - millis) / 1000);
+
+                progress = rendered->load() / pix_count;
+                int barWidth = 70;
+                std::cout << "[";
+                int pos = barWidth * progress;
+                for (int i = 0; i < barWidth; ++i) {
+                    if (i < pos) std::cout << "=";
+                    else if (i == pos) std::cout << ">";
+                    else std::cout << " ";
+                }
+                std::cout << "] " << int(progress * 100.0) << "%, Remaining: " << remaining << "             \r";
+                std::cout.flush();
+                std::this_thread::sleep_for(std::chrono::milliseconds(16));
+            }
+        });
+
 #if RTR_TBB_SUPPORT && !RTR_NO_THREADING
         tbb::parallel_do(beg_i, end_i, render_row);
 #else
         std::for_each(beg_i, end_i, render_row);
 #endif
+
+        display_thread.join();
 
         auto end = std::chrono::high_resolution_clock::now();
         auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();

@@ -60,9 +60,34 @@ namespace shading
             }
         );
 
+        if (ctx.hit.r.rtl)
+        {
+            auto ray_dir = rtr::sample_hemisphere(ctx.hit.normal, ctx.hit.r.ms_id, max_ms);
+
+            auto mc_ray = rtr::physics::ray(ctx.hit.position + ray_dir * shadow_epsilon, ray_dir);
+            mc_ray.ms_id = ctx.hit.r.ms_id;
+            mc_ray.rtl = ctx.hit.r.rtl - 1;
+
+            auto hit_res = ctx.scn.ray_cast(mc_ray);
+            if (hit_res)
+            {
+                auto mc_ctx = shading_ctx{
+                    ctx.scn,
+                    -ray_dir,
+                    *hit_res
+                };
+
+                auto monte_carlo_light = hit_res->mat->shade(mc_ctx);
+
+                brdf::brdf_ctx b_ctx {ctx, ray_dir};
+                auto brdf_res = brdf.calculate(&data, &b_ctx);
+                output += brdf_res * monte_carlo_light;
+            }
+        }
+
         scene.for_lights(light_handler);
 
-        return ambient + output;
+        return output;
     }
 
     template class brdf_mat<brdf::phong>;
