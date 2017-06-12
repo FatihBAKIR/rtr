@@ -9,6 +9,7 @@
 #include <render_configs.hpp>
 #include <rtr_config.hpp>
 #include <atomic>
+#include <set>
 
 namespace rtr
 {
@@ -50,11 +51,7 @@ class camera
 public:
     using render_type = render_config::ldr_render;
 
-    camera(const glm::vec3& pos, const glm::vec3& up, const glm::vec3 & gaze, const im_plane& p, const std::string& output) :
-            t{pos, glm::normalize(up), glm::normalize(-gaze), glm::normalize(glm::cross(t.up, t.forward))}, plane{p}, m_output{output} {
-        t.up = glm::normalize(glm::cross(t.right, -t.forward));
-        rendered = new std::atomic<uint64_t>;
-    }
+    camera(const glm::vec3& pos, const glm::vec3& up, const glm::vec3 & gaze, const im_plane& p, const std::string& output);
 
     typename render_config::render_traits<render_type>::image_type
     render(const scene& scene) const;
@@ -68,7 +65,13 @@ public:
 
     void set_samples(std::uint16_t samples);
 
+    void add_flag(const std::string& flag){
+        m_flags.emplace(flag);
+    }
+
 private:
+    std::set<std::string> m_flags;
+
     std::atomic<uint64_t>* rendered;
     transformation t;
     im_plane plane;

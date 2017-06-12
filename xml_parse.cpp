@@ -27,6 +27,7 @@
 #include <materials/glass.h>
 #include <materials/metal.hpp>
 #include <materials/bump.hpp>
+#include <materials/skybox.hpp>
 
 #include <boost/gil/extension/io/jpeg_io.hpp>
 #include <boost/gil/extension/io/png_io.hpp>
@@ -41,6 +42,8 @@
 #include <materials/brdf_mat.hpp>
 #include <materials/illuminating.hpp>
 #include <fstream>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
 
 namespace xml = tinyxml2;
 namespace {
@@ -89,6 +92,13 @@ namespace {
         int sample_num;
         iss = std::istringstream(get_text("NumSamples"));
         iss >> sample_num;
+
+        iss = std::istringstream(get_text("Flags"));
+        std::string flag;
+        while (iss >> flag)
+        {
+            cam.add_flag(flag);
+        }
 
         cam.set_samples(sample_num);
 
@@ -192,10 +202,19 @@ namespace {
         float max_radius = 0;
 
         for (auto s = elem->FirstChildElement(); s; s = s->NextSiblingElement()) {
+            auto id = s->IntAttribute("id");
             if (s->Name() == std::string("Mesh") || s->Name() == std::string("Triangle")) {
-                sc.insert(read_mesh(s, verts, uvs, indices, transformations, mats));
+                auto&& res = read_mesh(s, verts, uvs, indices, transformations, mats);
+                auto is_local = s->Attribute("local_scene") == std::string("True");
+                res.set_id(id);
+                if (is_local)
+                {
+                    res.set_local_scene();
+                }
+                sc.insert(std::move(res));
             } else if (s->Name() == std::string("Sphere")) {
                 auto &&sphere = read_sphere(s, mats, transformations);
+                sphere.set_id(id);
                 if (sphere.get_radius() > max_radius) {
                     auto growth = sphere.get_radius() - max_radius;
                     max_radius = sphere.get_radius();
@@ -208,8 +227,34 @@ namespace {
         }
     }
 
+    rtr::texturing::sampler2d* read_hdr(const xml::XMLElement* elem)
+    {
+        static_assert(RTR_OPENCV_SUPPORT, "need opencv for hdr reading");
+        auto mat = cv::imread(elem->FirstChildElement("Path")->GetText(), cv::IMREAD_COLOR | cv::IMREAD_ANYDEPTH);
+
+        cv::cvtColor(mat, mat, CV_BGR2RGB);
+
+        {
+            cv::GaussianBlur(mat, mat, cv::Size(3, 3), 0, 0);
+        }
+
+        float scaling = elem->FirstChildElement("Scaling")->FloatText(255);
+        rtr::texturing::sampling_mode m = rtr::texturing::sampling_mode::nearest_neighbour;
+
+        auto app_elem = elem->FirstChildElement("Sampling")->GetText();
+        if (app_elem == std::string("0")) m = rtr::texturing::sampling_mode::nearest_neighbour;
+        else if (app_elem == std::string("1")) m = rtr::texturing::sampling_mode::bilinear;
+
+        return new rtr::texturing::tex2d<float, 3>((const float*)(mat.data), mat.cols, mat.rows, scaling, m);
+    }
+
     rtr::texturing::sampler2d* read_image(const xml::XMLElement* elem)
     {
+        if (elem->Attribute("is_hdr") == std::string("True"))
+        {
+            return read_hdr(elem);
+        }
+
         boost::gil::rgb8_image_t im;
         auto p = elem->FirstChildElement("Path")->GetText();
         float scaling = elem->FirstChildElement("Scaling")->FloatText(255);
@@ -219,7 +264,7 @@ namespace {
         if (app_elem == std::string("0")) m = rtr::texturing::sampling_mode::nearest_neighbour;
         else if (app_elem == std::string("1")) m = rtr::texturing::sampling_mode::bilinear;
 
-        boost::gil::png_read_image(p, im);
+        boost::gil::jpeg_read_image(p, im);
         auto view = boost::gil::view (im);
 
         assert(view.is_1d_traversable());
@@ -449,6 +494,13 @@ namespace {
         return { ref };
     }
 
+    rtr::shading::skybox read_skybox_mat(const xml::XMLElement* elem, const std::map<uint16_t, rtr::texturing::sampler2d*> texs)
+    {
+        auto id = elem->FirstChildElement("TextureId")->IntText();
+        auto scale = elem->FirstChildElement("Scaling")->FloatText();
+        return { texs.find(id)->second, scale };
+    }
+
     rtr::brdf::brdf_data parse_data(const xml::XMLElement* elem)
     {
         auto get_text = [&](const char *name) {
@@ -604,8 +656,13 @@ namespace {
             auto ret = new rtr::shading::illuminating(read_illum_data(elem));
             ret->id = elem->Int64Attribute("id");
             return ret;
+        } else if (elem->Attribute("shader") == std::string("skybox"))
+        {
+            auto ret = new rtr::shading::skybox(read_skybox_mat(elem, samplers));
+            ret->id = elem->Int64Attribute("id");
+            return ret;
         }
-        throw std::runtime_error("shader not supported");
+        throw std::runtime_error("shader not supported: " + std::string(elem->Attribute("shader")));
     }
 
     rtr::bvector<glm::vec3> parse_vector_buffer(const xml::XMLElement *elem) {

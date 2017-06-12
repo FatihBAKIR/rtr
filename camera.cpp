@@ -29,6 +29,8 @@
 #include <chrono>
 #include <iostream>
 
+#include <geometry.hpp>
+
 namespace rtr {
 
     thread_local int max_ms;
@@ -82,7 +84,7 @@ namespace rtr {
         std::vector<std::uint16_t> ms_ids(cam.sample_count);
         std::iota(ms_ids.begin(), ms_ids.end(), 0);
         auto cam_ids = ms_ids;
-        auto rng = std::default_random_engine{};
+        auto rng = std::mt19937(0);
         std::shuffle(ms_ids.begin(), ms_ids.end(), rng);
         std::shuffle(cam_ids.begin(), cam_ids.end(), rng);
 
@@ -111,8 +113,30 @@ namespace rtr {
             return cam_top_left + cam_right * x + cam_down * y;
         };
 
+        bool is_mask = cam.m_flags.find("is_mask") != cam.m_flags.end();
         auto render_pix = [&](const pix_iterator& i)
         {
+            if (is_mask)
+            {
+                ray r(cam.t.position, glm::normalize(i.pix_pos - cam.t.position));
+                r.rtl = 1;
+                r.ms_id = 0;
+                r.m_backface_cull = true;
+
+                auto res = scene.ray_cast(r);
+                if (res)
+                {
+                    auto id = boost::apply_visitor([](auto obj)
+                    {
+                        return obj->get_id();
+                    }, res->shape);
+
+                    v(i.pos, row) = pix_type(id, 0, 0);
+                }
+                (*cam.rendered)++;
+                return;
+            }
+
             glm::vec3 top_left = i.pix_pos + (-one_right - one_down + sample_right + sample_down) * 0.5f;
 
             std::array<glm::vec3, 3> pix_basis = {sample_right, sample_down, {}};
@@ -141,7 +165,8 @@ namespace rtr {
                 if (res)
                 {
                     const auto &c = res->mat->shade(shading_ctx{scene, -r.dir, *res});
-                    fin_color += c;
+                    auto col = glm::min(c, 1000.f);
+                    fin_color += col;
                     any_hit = true;
                 }
             }
@@ -162,6 +187,7 @@ namespace rtr {
 
     typename render_config::render_traits<camera::render_type>::image_type
     camera::render(const scene &scene) const {
+
         static auto id = 0;
 
         max_ms = this->sample_count;
@@ -232,6 +258,11 @@ namespace rtr {
             }
         });
 
+        for (auto& f : m_flags)
+        {
+            std::cout << f << '\n';
+        }
+
 #if RTR_TBB_SUPPORT && !RTR_NO_THREADING
         tbb::parallel_do(beg_i, end_i, render_row);
 #else
@@ -268,6 +299,14 @@ namespace rtr {
     {
         sample_count = samples;
         sample_sqrt = std::sqrt(samples);
+    }
+
+    camera::camera(const glm::vec3& pos, const glm::vec3& up, const glm::vec3& gaze, const im_plane& p,
+            const std::string& output)
+            :
+            t{pos, glm::normalize(up), glm::normalize(-gaze), glm::normalize(glm::cross(t.up, t.forward))}, plane{p}, m_output{output} {
+        t.up = glm::normalize(glm::cross(t.right, -t.forward));
+        rendered = new std::atomic<uint64_t>;
     }
 }
 

@@ -27,6 +27,9 @@ class mesh {
     bvh_type hier;
 
     const material* mat;
+    int m_id = -1;
+
+    bool m_local_scene = false;
 
 public:
 
@@ -61,6 +64,21 @@ public:
     glm::vec3 get_center() const
     {
         return hier->bounding_box().position;
+    }
+
+
+    void set_id(int id)
+    {
+        m_id = id + 127;
+    }
+    int get_id() const
+    {
+        return m_id;
+    }
+
+    void set_local_scene()
+    {
+        m_local_scene = true;
     }
 };
 }

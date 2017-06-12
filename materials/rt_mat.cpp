@@ -65,21 +65,6 @@ namespace rtr
             return this->diffuse_sampler->sample(tex_pos) * 255.f;
         }
 
-        glm::vec3 c;
-        scene.for_lights(light_handler);
-        switch (mode)
-        {
-        case decal_mode::replace:
-            break;
-        case decal_mode::coeff:
-            c = this->diffuse_sampler->sample(tex_pos);
-            diffuse *= c;
-            break;
-        case decal_mode::blend:
-            diffuse *= (this->diffuse_sampler->sample(tex_pos) + this->diffuse) * 0.5f;
-            break;
-        }
-
         if (ctx.hit.r.rtl)
         {
             auto ray_dir = rtr::sample_hemisphere(ctx.hit.normal, ctx.hit.r.ms_id, max_ms);
@@ -107,6 +92,21 @@ namespace rtr
                 diffuse += monte_carlo_light * diffuse_coeff;
                 specular += monte_carlo_light * specular_coeff;
             }
+        }
+
+        glm::vec3 c;
+        scene.for_lights(light_handler);
+        switch (mode)
+        {
+        case decal_mode::replace:
+            break;
+        case decal_mode::coeff:
+            c = this->diffuse_sampler->sample(tex_pos);
+            diffuse *= c;
+            break;
+        case decal_mode::blend:
+            diffuse *= (this->diffuse_sampler->sample(tex_pos) + this->diffuse) * 0.5f;
+            break;
         }
 
         specular *= this->specular;

@@ -1,0 +1,4 @@
+/home/fatih/rtr/ninja_build/CMakeFiles/edit_cache.dir
+/home/fatih/rtr/ninja_build/CMakeFiles/rebuild_cache.dir
+/home/fatih/rtr/ninja_build/CMakeFiles/tests.dir
+/home/fatih/rtr/ninja_build/CMakeFiles/ray.dir

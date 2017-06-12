@@ -6,6 +6,16 @@ import xml.etree.ElementTree as etree
 tree = etree.parse(sys.argv[1])
 file_dir = os.path.dirname(sys.argv[1])
 
+scene_type = "full"
+if "local_scene" in sys.argv:
+    scene_type = "local"
+
+if "distant_scene" in sys.argv:
+    scene_type = "distant"
+
+if "mask_scene" in sys.argv:
+    scene_type = "mask"
+
 root = tree.getroot()
 
 converted_root = etree.Element("Scene")
@@ -29,6 +39,20 @@ for cam in root.iterfind("Camera"):
         cam.attrib["type"] = "aperture"
     else:
         cam.attrib["type"] = "pinhole"
+
+    cam.find("ImageName").text = "ibl/full.png"
+
+    if scene_type == "local":
+        cam.find("ImageName").text = "ibl/local.png"
+
+    if scene_type == "distant":
+        cam.find("NumSamples").text = "1"
+        cam.find("ImageName").text = "ibl/distant.png"
+
+    if scene_type == "mask":
+        cam.find("Flags").text += " is_mask"
+        cam.find("ImageName").text = "ibl/mask.png"
+
     converted_cameras.append(copy.deepcopy(cam))
 
 converted_root.append(copy.deepcopy(root.find("MaxRecursionDepth")))
@@ -90,11 +114,13 @@ class image_data(texture):
     scaling = 1
     sampling = sampling_mode.Nearest
     is_bump = False
+    is_hdr = False
 
     def to_xml(self, elem):
         elem = etree.Element("Image")
 
         super(image_data, self).to_xml(elem)
+        elem.attrib["is_hdr"] = str(self.is_hdr)
         etree.SubElement(elem, "Path").text = self.path
         etree.SubElement(elem, "Scaling").text = str(self.scaling)
         etree.SubElement(elem, "Sampling").text = str(self.sampling)
@@ -114,6 +140,9 @@ def parse_texture(elem):
         res.path = os.path.realpath(os.path.join(file_dir, elem.find("ImageName").text))
         res.scaling = 255
         res.is_bump = ("bumpmap" in elem.attrib and elem.attrib["bumpmap"] == "true")
+        if "is_hdr" in elem.attrib and elem.attrib["is_hdr"] == "true":
+            res.scaling = 1
+            res.is_hdr = True
 
     res.decal_mode = get_decal_mode(elem.find("DecalMode").text)
     res.id = int(elem.attrib["id"])
@@ -154,6 +183,7 @@ if root.find("BRDFs") is not None:
 for mat in root.find("Materials"):
     if "shader" in mat.attrib:
         new_mats.append(copy.deepcopy(mat))
+        materials[int(mat.attrib["id"])] = copy.deepcopy(mat)
         continue
 
     if "BRDF" in mat.attrib:
@@ -283,6 +313,12 @@ objects = root.find("Objects")
 new_objects = etree.SubElement(converted_root, "Objects")
 
 for sphere in objects.iterfind("Sphere"):
+    if scene_type == "local" and "local_scene" not in sphere.attrib and "distant_scene" not in sphere.attrib:
+        continue
+
+    if scene_type == "distant" and "distant_scene" not in sphere.attrib:
+        continue
+
     mat_id = int(sphere.find("Material").text)
 
     if not sphere.find("Texture") is None:
@@ -368,6 +404,11 @@ meshes = {}
 max_mesh_id = 0
 
 for mesh in objects.iterfind("Mesh"):
+    if scene_type == "distant":
+        continue
+    if scene_type == "local" and ("local_scene" not in mesh.attrib or mesh.attrib["local_scene"] != "True"):
+        continue
+
     faces = mesh.find("Faces")
 
     if not "vertexOffset" in faces.attrib:

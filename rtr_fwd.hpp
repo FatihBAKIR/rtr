@@ -22,6 +22,7 @@ namespace rtr {
         class glass;
         class bump;
         class illuminating;
+        class skybox;
 
         template <class> class brdf_mat;
     }

@@ -8,6 +8,7 @@
 #include <rtr_fwd.hpp>
 #include <iosfwd>
 #include <scene.hpp>
+#include <bitset>
 
 namespace rtr
 {
@@ -21,6 +22,8 @@ struct ray
     glm::vec3 m_inverse;
     std::uint16_t ms_id; // multisampling id
     bool m_backface_cull = false;
+    bool ignore_local;
+    bool only_distant;
 
     ray(const glm::vec3& origin, const glm::vec3& dir) : origin{origin}, dir{dir}, m_inverse{glm::vec3(1.f, 1.f, 1.f) / dir} {}
 
