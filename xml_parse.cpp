@@ -27,6 +27,7 @@
 #include <materials/glass.h>
 #include <materials/metal.hpp>
 #include <materials/bump.hpp>
+#include <materials/skybox.hpp>
 
 #include <boost/gil/extension/io/jpeg_io.hpp>
 #include <boost/gil/extension/io/png_io.hpp>
@@ -34,6 +35,15 @@
 
 #include <texturing/tex2d.hpp>
 #include <texturing/perlin2d.hpp>
+#include <brdf/brdf_common.hpp>
+#include <brdf/phong_brdf.hpp>
+#include <brdf/blinn_phong_brdf.hpp>
+#include <brdf/torrance_sparrow.hpp>
+#include <materials/brdf_mat.hpp>
+#include <materials/illuminating.hpp>
+#include <fstream>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
 
 namespace xml = tinyxml2;
 namespace {
@@ -82,6 +92,13 @@ namespace {
         int sample_num;
         iss = std::istringstream(get_text("NumSamples"));
         iss >> sample_num;
+
+        iss = std::istringstream(get_text("Flags"));
+        std::string flag;
+        while (iss >> flag)
+        {
+            cam.add_flag(flag);
+        }
 
         cam.set_samples(sample_num);
 
@@ -185,10 +202,19 @@ namespace {
         float max_radius = 0;
 
         for (auto s = elem->FirstChildElement(); s; s = s->NextSiblingElement()) {
+            auto id = s->IntAttribute("id");
             if (s->Name() == std::string("Mesh") || s->Name() == std::string("Triangle")) {
-                sc.insert(read_mesh(s, verts, uvs, indices, transformations, mats));
+                auto&& res = read_mesh(s, verts, uvs, indices, transformations, mats);
+                auto is_local = s->Attribute("local_scene") == std::string("True");
+                res.set_id(id);
+                if (is_local)
+                {
+                    res.set_local_scene();
+                }
+                sc.insert(std::move(res));
             } else if (s->Name() == std::string("Sphere")) {
                 auto &&sphere = read_sphere(s, mats, transformations);
+                sphere.set_id(id);
                 if (sphere.get_radius() > max_radius) {
                     auto growth = sphere.get_radius() - max_radius;
                     max_radius = sphere.get_radius();
@@ -201,8 +227,34 @@ namespace {
         }
     }
 
+    rtr::texturing::sampler2d* read_hdr(const xml::XMLElement* elem)
+    {
+        static_assert(RTR_OPENCV_SUPPORT, "need opencv for hdr reading");
+        auto mat = cv::imread(elem->FirstChildElement("Path")->GetText(), cv::IMREAD_COLOR | cv::IMREAD_ANYDEPTH);
+
+        cv::cvtColor(mat, mat, CV_BGR2RGB);
+
+        {
+            cv::GaussianBlur(mat, mat, cv::Size(3, 3), 0, 0);
+        }
+
+        float scaling = elem->FirstChildElement("Scaling")->FloatText(255);
+        rtr::texturing::sampling_mode m = rtr::texturing::sampling_mode::nearest_neighbour;
+
+        auto app_elem = elem->FirstChildElement("Sampling")->GetText();
+        if (app_elem == std::string("0")) m = rtr::texturing::sampling_mode::nearest_neighbour;
+        else if (app_elem == std::string("1")) m = rtr::texturing::sampling_mode::bilinear;
+
+        return new rtr::texturing::tex2d<float, 3>((const float*)(mat.data), mat.cols, mat.rows, scaling, m);
+    }
+
     rtr::texturing::sampler2d* read_image(const xml::XMLElement* elem)
     {
+        if (elem->Attribute("is_hdr") == std::string("True"))
+        {
+            return read_hdr(elem);
+        }
+
         boost::gil::rgb8_image_t im;
         auto p = elem->FirstChildElement("Path")->GetText();
         float scaling = elem->FirstChildElement("Scaling")->FloatText(255);
@@ -334,8 +386,11 @@ namespace {
         iss = std::istringstream(get_text("SpecularReflectance"));
         iss >> specular[0] >> specular[1] >> specular[2];
 
-        auto phong = elem->FirstChildElement("PhongExponent")->FloatText(0);
-
+        float phong = 0;
+        if (elem->FirstChildElement("PhongExponent"))
+        {
+            phong = elem->FirstChildElement("PhongExponent")->FloatText(0);
+        }
 
         auto dif_elem = elem->FirstChildElement("DiffuseReflectance");
         int id;
@@ -424,7 +479,141 @@ namespace {
         return { ref, index };
     }
 
-    rtr::material *read_material(const xml::XMLElement *elem, const std::unordered_map<long, rtr::material *> &mats, const std::map<uint16_t, rtr::texturing::sampler2d*> samplers) {
+    rtr::shading::illuminating read_illum_data(const xml::XMLElement* elem)
+    {
+        float index;
+
+        auto get_text = [&](const char *name) {
+            return elem->FirstChildElement(name)->GetText();
+        };
+
+        glm::vec3 ref;
+        auto iss = std::istringstream(get_text("Radiance"));
+        iss >> ref[0] >> ref[1] >> ref[2];
+
+        return { ref };
+    }
+
+    rtr::shading::skybox read_skybox_mat(const xml::XMLElement* elem, const std::map<uint16_t, rtr::texturing::sampler2d*> texs)
+    {
+        auto id = elem->FirstChildElement("TextureId")->IntText();
+        auto scale = elem->FirstChildElement("Scaling")->FloatText();
+        return { texs.find(id)->second, scale };
+    }
+
+    rtr::brdf::brdf_data parse_data(const xml::XMLElement* elem)
+    {
+        auto get_text = [&](const char *name) {
+            return elem->FirstChildElement(name)->GetText();
+        };
+
+        glm::vec3 diffuse, specular, ambient;
+        std::istringstream iss(get_text("AmbientReflectance"));
+        iss >> ambient[0] >> ambient[1] >> ambient[2];
+
+        iss = std::istringstream(get_text("DiffuseReflectance"));
+        iss >> diffuse[0] >> diffuse[1] >> diffuse[2];
+
+        iss = std::istringstream(get_text("SpecularReflectance"));
+        iss >> specular[0] >> specular[1] >> specular[2];
+
+        return {diffuse, specular, ambient};
+    }
+
+    namespace parser
+    {
+        namespace brdf
+        {
+            using namespace rtr::brdf;
+            phong read_phong(const xml::XMLElement* elem)
+            {
+                auto phong = elem->FirstChildElement("Exponent")->FloatText(0);
+                return {phong};
+            }
+
+            phong_modified read_phong_modified(const xml::XMLElement* elem)
+            {
+                auto phong = elem->FirstChildElement("Exponent")->FloatText(0);
+                return {phong};
+            }
+
+            phong_modified_normalized read_phong_modified_norm(const xml::XMLElement* elem)
+            {
+                auto phong = elem->FirstChildElement("Exponent")->FloatText(0);
+                return {phong};
+            }
+
+            blinn_phong read_blinn_phong(const xml::XMLElement* elem)
+            {
+                auto phong = elem->FirstChildElement("Exponent")->FloatText(0);
+                return {phong};
+            }
+
+            blinn_phong_modified read_blinn_phong_modified(const xml::XMLElement* elem)
+            {
+                auto phong = elem->FirstChildElement("Exponent")->FloatText(0);
+                return {phong};
+            }
+
+            blinn_phong_modified_normalized read_blinn_phong_modified_norm(const xml::XMLElement* elem)
+            {
+                auto phong = elem->FirstChildElement("Exponent")->FloatText(0);
+                return {phong};
+            }
+
+            torrance_sparrow read_torrence(const xml::XMLElement* elem)
+            {
+                auto phong = elem->FirstChildElement("Exponent")->FloatText(0);
+                return {phong};
+            }
+        }
+    }
+
+    rtr::material* read_brdf_mat(const xml::XMLElement* elem)
+    {
+        auto data = parse_data(elem);
+
+        if (elem->Attribute("brdf") == std::string("OriginalPhong"))
+        {
+            return rtr::shading::make_brdf(data, parser::brdf::read_phong(elem));
+        }
+
+        if (elem->Attribute("brdf") == std::string("ModifiedPhong"))
+        {
+            return rtr::shading::make_brdf(data, parser::brdf::read_phong_modified(elem));
+        }
+
+        if (elem->Attribute("brdf") == std::string("ModifiedPhongNorm"))
+        {
+            return rtr::shading::make_brdf(data, parser::brdf::read_phong_modified_norm(elem));
+        }
+
+        if (elem->Attribute("brdf") == std::string("OriginalBlinnPhong"))
+        {
+            return rtr::shading::make_brdf(data, parser::brdf::read_blinn_phong(elem));
+        }
+
+        if (elem->Attribute("brdf") == std::string("ModifiedBlinnPhong"))
+        {
+            return rtr::shading::make_brdf(data, parser::brdf::read_blinn_phong_modified(elem));
+        }
+
+        if (elem->Attribute("brdf") == std::string("ModifiedBlinnPhongNorm"))
+        {
+            return rtr::shading::make_brdf(data, parser::brdf::read_blinn_phong_modified_norm(elem));
+        }
+
+        if (elem->Attribute("brdf") == std::string("TorranceSparrow"))
+        {
+            return rtr::shading::make_brdf(data, parser::brdf::read_torrence(elem));
+        }
+
+        throw std::runtime_error("brdf not supported");
+    }
+
+    rtr::material *read_material(const xml::XMLElement *elem,
+            const std::unordered_map<long, rtr::material *> &mats,
+            const std::map<uint16_t, rtr::texturing::sampler2d*> samplers) {
         if (elem->Attribute("shader") == nullptr || elem->Attribute("shader") == std::string("ceng795")) {
             auto m = new rtr::rt_mat(read_rt_material(elem, samplers));
             m->id = elem->Int64Attribute("id");
@@ -457,12 +646,51 @@ namespace {
             auto ret = new rtr::shading::bump(read_bump_mat(elem, samplers));
             ret->id = elem->Int64Attribute("id");
             return ret;
+        } else if (elem->Attribute("shader") == std::string("brdf"))
+        {
+            auto ret = read_brdf_mat(elem);
+            ret->id = elem->Int64Attribute("id");
+            return ret;
+        } else if (elem->Attribute("shader") == std::string("illuminating"))
+        {
+            auto ret = new rtr::shading::illuminating(read_illum_data(elem));
+            ret->id = elem->Int64Attribute("id");
+            return ret;
+        } else if (elem->Attribute("shader") == std::string("skybox"))
+        {
+            auto ret = new rtr::shading::skybox(read_skybox_mat(elem, samplers));
+            ret->id = elem->Int64Attribute("id");
+            return ret;
         }
-        throw std::runtime_error("shader not supported");
+        throw std::runtime_error("shader not supported: " + std::string(elem->Attribute("shader")));
     }
 
     rtr::bvector<glm::vec3> parse_vector_buffer(const xml::XMLElement *elem) {
         rtr::bvector<glm::vec3> vert_pos;
+        auto bin_file = elem->Attribute("binaryFile");
+        if (bin_file)
+        {
+            std::ifstream inf(bin_file, std::ios::binary);
+
+            assert(inf.good());
+
+            uint32_t len;
+            inf.read(reinterpret_cast<char*>(&len), sizeof(len));
+
+            std::cout << len << '\n';
+
+            for (int i = 0; i < len; ++i)
+            {
+                glm::vec3 v;
+                inf.read(reinterpret_cast<char*>(&v[0]), sizeof(v[0]));
+                inf.read(reinterpret_cast<char*>(&v[1]), sizeof(v[1]));
+                inf.read(reinterpret_cast<char*>(&v[2]), sizeof(v[2]));
+                vert_pos.push_back(v);
+            }
+
+            return vert_pos;
+        }
+
         auto vert_text = elem->GetText();
         auto iss = std::istringstream(vert_text);
         for (glm::vec3 v; iss >> v[0] >> v[1] >> v[2];) {
@@ -473,6 +701,30 @@ namespace {
 
     rtr::bvector<glm::vec2> parse_uvector_buffer(const xml::XMLElement *elem) {
         rtr::bvector<glm::vec2> vert_pos;
+
+        auto bin_file = elem->Attribute("binaryFile");
+        if (bin_file)
+        {
+            std::ifstream inf(bin_file, std::ios::binary);
+
+            assert(inf.good());
+
+            uint32_t len;
+            inf.read(reinterpret_cast<char*>(&len), sizeof(len));
+
+            std::cout << len << '\n';
+
+            for (int i = 0; i < len; ++i)
+            {
+                glm::vec2 v;
+                inf.read(reinterpret_cast<char*>(&v[0]), sizeof(v[0]));
+                inf.read(reinterpret_cast<char*>(&v[1]), sizeof(v[1]));
+                vert_pos.push_back(v);
+            }
+
+            return vert_pos;
+        }
+
         auto vert_text = elem->GetText();
         auto iss = std::istringstream(vert_text);
         for (glm::vec2 v; iss >> v[0] >> v[1];) {
@@ -483,6 +735,31 @@ namespace {
 
     rtr::bvector<int> parse_index_buffer(const xml::XMLElement *elem) {
         rtr::bvector<int> vert_pos;
+
+        auto bin_file = elem->Attribute("binaryFile");
+        if (bin_file)
+        {
+            std::ifstream inf(bin_file, std::ios::binary);
+
+            assert(inf.good());
+
+            uint32_t len;
+            inf.read(reinterpret_cast<char*>(&len), sizeof(len));
+
+            std::cout << len << '\n';
+
+            for (int i = 0; i < len; ++i)
+            {
+                int v[3];
+                inf.read(reinterpret_cast<char*>(&v[0]), sizeof(v[0]));
+                inf.read(reinterpret_cast<char*>(&v[1]), sizeof(v[1]));
+                inf.read(reinterpret_cast<char*>(&v[2]), sizeof(v[2]));
+                vert_pos.insert(vert_pos.end(), std::begin(v), std::end(v));
+            }
+
+            return vert_pos;
+        }
+
         auto vert_text = elem->GetText();
         auto iss = std::istringstream(vert_text);
         for (int v; iss >> v;) {

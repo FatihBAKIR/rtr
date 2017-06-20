@@ -15,78 +15,46 @@
 
 namespace rtr
 {
-    static constexpr float shadow_epsilon = 0.01f;
-
     glm::vec3 rt_mat::shade(const shading_ctx& ctx) const {
         auto& scene = ctx.scn;
+        auto& normal = ctx.hit.normal;
 
         glm::vec3 ambient = scene.get_ambient().intensity_at(ctx.hit.position) * this->ambient;
         glm::vec3 diffuse = {0,0,0};
         glm::vec3 specular = {0,0,0};
 
+        auto per_light = [&](const auto& point_to_light, const auto& light_intensity)
+        {
+            auto len = glm::length(point_to_light);
+            auto normalized_ptol = point_to_light / len;
+
+            auto shadow_ray = physics::ray(ctx.hit.position + shadow_epsilon * normalized_ptol, normalized_ptol);
+            if (scene.ray_cast_param(shadow_ray, -shadow_epsilon, len)) { return; }
+
+            auto diffuse_coeff = std::max(0.0f, glm::dot(normal, normalized_ptol));
+
+            auto half_light_view = glm::normalize(ctx.view_dir + normalized_ptol);
+            auto specular_coeff = std::pow(std::max(0.0f, glm::dot(normal, half_light_view)), phong);
+
+            diffuse += light_intensity * diffuse_coeff;
+            specular += light_intensity * specular_coeff;
+        };
+
         auto light_handler = make_lambda_visitor<void>(
             [&](const auto* pl)
             {
-                auto& normal = ctx.hit.normal;
                 auto point_to_light = pl->get_position() - ctx.hit.position;
-                auto len = glm::length(point_to_light);
-                auto normalized_ptol = point_to_light / len;
-
-                auto shadow_ray = physics::ray(ctx.hit.position + shadow_epsilon * normalized_ptol, normalized_ptol);
-                auto res = scene.ray_cast_param(shadow_ray, -shadow_epsilon, len);
-                if (res)
-                {
-                    return;
-                }
-
-                auto light_intensity = pl->intensity_at(ctx.hit.position);
-                auto diffuse_coeff = std::max(0.0f, glm::dot(normal, normalized_ptol));
-
-                auto half_light_view = glm::normalize(ctx.view_dir + normalized_ptol);
-                auto specular_coeff = std::pow(std::max(0.0f, glm::dot(normal, half_light_view)), phong);
-
-                diffuse += light_intensity * diffuse_coeff;
-                specular += light_intensity * specular_coeff;
+                per_light(point_to_light, pl->intensity_at(ctx.hit.position));
             },
             [&](const lights::area_light* al)
             {
-                auto& normal = ctx.hit.normal;
                 auto point_to_light = al->get_position(ctx.hit.r.ms_id) - ctx.hit.position;
-                auto len = glm::length(point_to_light);
-                auto normalized_ptol = point_to_light / len;
-
-                auto shadow_ray = physics::ray(ctx.hit.position + shadow_epsilon * normalized_ptol, normalized_ptol);
-                auto res = scene.ray_cast_param(shadow_ray, -shadow_epsilon, len);
-                if (res) return;
-
-                auto light_intensity = al->intensity_at(ctx.hit.r.ms_id, ctx.hit.position);
-                auto diffuse_coeff = std::max(0.0f, glm::dot(normal, normalized_ptol));
-
-                auto half_light_view = glm::normalize(ctx.view_dir + normalized_ptol);
-                auto specular_coeff = std::pow(std::max(0.0f, glm::dot(normal, half_light_view)), phong);
-
-                diffuse += light_intensity * diffuse_coeff;
-                specular += light_intensity * specular_coeff;
+                per_light(point_to_light, al->intensity_at(ctx.hit.r.ms_id, ctx.hit.position));
             },
             [&](const lights::directional_light* dl)
             {
-                auto& normal = ctx.hit.normal;
                 auto point_to_light = dl->get_inverse_dir();
-                auto len = glm::length(point_to_light);
-                auto normalized_ptol = point_to_light / len;
-
-                auto shadow_ray = physics::ray(ctx.hit.position + shadow_epsilon * normalized_ptol, normalized_ptol);
-                auto res = scene.ray_cast_param(shadow_ray, -shadow_epsilon, len);
-                if (res) return;
-
-                auto light_intensity = dl->intensity_at(ctx.hit.position);
-                auto diffuse_coeff = std::max(0.0f, glm::dot(normal, normalized_ptol));
-
-                auto half_light_view = glm::normalize(ctx.view_dir + normalized_ptol);
-                auto specular_coeff = std::pow(std::max(0.0f, glm::dot(normal, half_light_view)), phong);
-
-                diffuse += light_intensity * diffuse_coeff;
-                specular += light_intensity * specular_coeff;
+                per_light(point_to_light, dl->intensity_at(ctx.hit.position));
             }
         );
 
@@ -95,6 +63,35 @@ namespace rtr
         if (mode == decal_mode::replace)
         {
             return this->diffuse_sampler->sample(tex_pos) * 255.f;
+        }
+
+        if (ctx.hit.r.rtl)
+        {
+            auto ray_dir = rtr::sample_hemisphere(ctx.hit.normal, ctx.hit.r.ms_id, max_ms);
+
+            auto mc_ray = rtr::physics::ray(ctx.hit.position + ray_dir * shadow_epsilon, ray_dir);
+            mc_ray.ms_id = ctx.hit.r.ms_id;
+            mc_ray.rtl = ctx.hit.r.rtl - 1;
+
+            auto hit_res = ctx.scn.ray_cast(mc_ray);
+            if (hit_res)
+            {
+                auto mc_ctx = shading_ctx{
+                    ctx.scn,
+                    -ray_dir,
+                    *hit_res
+                };
+
+                auto monte_carlo_light = hit_res->mat->shade(mc_ctx);
+
+                auto diffuse_coeff = std::max(0.0f, glm::dot(normal, ray_dir));
+
+                auto half_light_view = glm::normalize(ctx.view_dir + ray_dir);
+                auto specular_coeff = std::pow(std::max(0.0f, glm::dot(normal, half_light_view)), phong);
+
+                diffuse += monte_carlo_light * diffuse_coeff;
+                specular += monte_carlo_light * specular_coeff;
+            }
         }
 
         glm::vec3 c;

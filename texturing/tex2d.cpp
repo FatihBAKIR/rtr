@@ -3,6 +3,7 @@
 //
 
 #include "tex2d.hpp"
+#include <algorithm>
 
 namespace rtr
 {
@@ -24,10 +25,12 @@ namespace texturing
     {
         x %= w;
         y %= h;
+
         auto r = m_data[(y * w + x) * num_channels];
         auto g = m_data[(y * w + x) * num_channels + 1];
         auto b = m_data[(y * w + x) * num_channels + 2];
-        return glm::vec3(r, g, b) / scaling;
+
+        return glm::vec3(r, g, b) * 0.5f / scaling;
     }
 
     template <class T>

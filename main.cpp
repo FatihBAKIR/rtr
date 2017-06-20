@@ -25,6 +25,8 @@
 
 #include <boost/program_options.hpp>
 
+void merge();
+
 int main(int ac, char** av)
 {
     auto logger = spdlog::stderr_logger_st("general");
@@ -39,6 +41,7 @@ int main(int ac, char** av)
             ("stdin", "read scene from standard input")
             ("file", po::value<std::string>()->default_value(""), "read scene from file")
             ("assimp", po::value<std::string>()->default_value(""), "read scene from file")
+            ("ibl", "merge ibl")
             ;
 
     po::variables_map vm;
@@ -48,6 +51,12 @@ int main(int ac, char** av)
     if (vm.count("help")) {
         std::cout << desc << "\n";
         return 1;
+    }
+
+    if (vm.count("ibl"))
+    {
+        merge();
+        return 0;
     }
 
     std::string scene_file;

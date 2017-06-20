@@ -29,7 +29,11 @@
 #include <chrono>
 #include <iostream>
 
+#include <geometry.hpp>
+
 namespace rtr {
+
+    thread_local int max_ms;
 
     struct pix_iterator
             : public std::iterator<std::forward_iterator_tag, pix_iterator>
@@ -80,7 +84,7 @@ namespace rtr {
         std::vector<std::uint16_t> ms_ids(cam.sample_count);
         std::iota(ms_ids.begin(), ms_ids.end(), 0);
         auto cam_ids = ms_ids;
-        auto rng = std::default_random_engine{};
+        auto rng = std::mt19937(0);
         std::shuffle(ms_ids.begin(), ms_ids.end(), rng);
         std::shuffle(cam_ids.begin(), cam_ids.end(), rng);
 
@@ -109,8 +113,30 @@ namespace rtr {
             return cam_top_left + cam_right * x + cam_down * y;
         };
 
+        bool is_mask = cam.m_flags.find("is_mask") != cam.m_flags.end();
         auto render_pix = [&](const pix_iterator& i)
         {
+            if (is_mask)
+            {
+                ray r(cam.t.position, glm::normalize(i.pix_pos - cam.t.position));
+                r.rtl = 1;
+                r.ms_id = 0;
+                r.m_backface_cull = true;
+
+                auto res = scene.ray_cast(r);
+                if (res)
+                {
+                    auto id = boost::apply_visitor([](auto obj)
+                    {
+                        return obj->get_id();
+                    }, res->shape);
+
+                    v(i.pos, row) = pix_type(id, 0, 0);
+                }
+                (*cam.rendered)++;
+                return;
+            }
+
             glm::vec3 top_left = i.pix_pos + (-one_right - one_down + sample_right + sample_down) * 0.5f;
 
             std::array<glm::vec3, 3> pix_basis = {sample_right, sample_down, {}};
@@ -133,12 +159,14 @@ namespace rtr {
                 ray r(pos, glm::normalize(rtr::random_point(get_sample_pos(ms_ids[j]), pix_basis, pix_deviate) - pos));
                 r.rtl = scene.get_rtl();
                 r.ms_id = j;
+                r.m_backface_cull = true;
 
                 auto res = scene.ray_cast(r);
                 if (res)
                 {
                     const auto &c = res->mat->shade(shading_ctx{scene, -r.dir, *res});
-                    fin_color += c;
+                    auto col = glm::min(c, 1000.f);
+                    fin_color += col;
                     any_hit = true;
                 }
             }
@@ -159,8 +187,10 @@ namespace rtr {
 
     typename render_config::render_traits<camera::render_type>::image_type
     camera::render(const scene &scene) const {
+
         static auto id = 0;
 
+        max_ms = this->sample_count;
         auto logger = spdlog::stderr_logger_st("camera " + std::to_string(++id));
         logger->info("Rendering with configuration \"{0}\"", render_type::name);
         logger->info("Output file: {0}", m_output);
@@ -199,11 +229,47 @@ namespace rtr {
             render_scanline(*this, row.pix_pos, row.pos, one_down, one_right, scene, v);
         };
 
+        float pix_count = plane.width * plane.height;
+
+        rendered->store(0);
+
+        auto display_thread = std::thread([&]{
+            float progress = 0;
+            std::this_thread::sleep_for(std::chrono::milliseconds(16));
+            while (progress < 1.f)
+            {
+                auto end = std::chrono::high_resolution_clock::now();
+                auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+                float total_time = millis / progress;
+                int remaining = std::floor((total_time - millis) / 1000);
+
+                progress = rendered->load() / pix_count;
+                int barWidth = 70;
+                std::cout << "[";
+                int pos = barWidth * progress;
+                for (int i = 0; i < barWidth; ++i) {
+                    if (i < pos) std::cout << "=";
+                    else if (i == pos) std::cout << ">";
+                    else std::cout << " ";
+                }
+                std::cout << "] " << int(progress * 100.0) << "%, Remaining: " << remaining << "             \r";
+                std::cout.flush();
+                std::this_thread::sleep_for(std::chrono::milliseconds(16));
+            }
+        });
+
+        for (auto& f : m_flags)
+        {
+            std::cout << f << '\n';
+        }
+
 #if RTR_TBB_SUPPORT && !RTR_NO_THREADING
         tbb::parallel_do(beg_i, end_i, render_row);
 #else
         std::for_each(beg_i, end_i, render_row);
 #endif
+
+        display_thread.join();
 
         auto end = std::chrono::high_resolution_clock::now();
         auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
@@ -233,6 +299,14 @@ namespace rtr {
     {
         sample_count = samples;
         sample_sqrt = std::sqrt(samples);
+    }
+
+    camera::camera(const glm::vec3& pos, const glm::vec3& up, const glm::vec3& gaze, const im_plane& p,
+            const std::string& output)
+            :
+            t{pos, glm::normalize(up), glm::normalize(-gaze), glm::normalize(glm::cross(t.up, t.forward))}, plane{p}, m_output{output} {
+        t.up = glm::normalize(glm::cross(t.right, -t.forward));
+        rendered = new std::atomic<uint64_t>;
     }
 }
 

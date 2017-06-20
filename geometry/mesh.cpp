@@ -169,7 +169,7 @@ namespace geometry
         auto diff = glm::dot(other_normal, normal);
         if (diff < 0.99)
         {
-            std::cerr << "problem\n";
+            //std::cerr << "problem\n";
         }
 
         return physics::ray_hit{ this, ray, mat, ray.origin + ray.dir * parameter, normal, parameter, uv, dpdu, dpdv };
@@ -184,6 +184,11 @@ namespace geometry
 
     boost::optional<mesh::param_res_t> mesh::get_parameter(const rtr::physics::ray& ray) const
     {
+        if (!ray.m_backface_cull && m_local_scene)
+        {
+            return {};
+        }
+
         triangle::param_res_t cur_param = {std::numeric_limits<float>::infinity(), {}};
         const triangle* cur_hit = nullptr;
 
@@ -215,7 +220,9 @@ namespace geometry
         vert_normals(std::move(rhs.vert_normals)),
         hier(std::move(rhs.hier)),
         uvs(std::move(rhs.uvs)),
-        mat(rhs.mat)
+        mat(rhs.mat),
+        m_id(rhs.m_id),
+        m_local_scene(rhs.m_local_scene)
     {
     }
 

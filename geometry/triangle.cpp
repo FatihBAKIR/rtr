@@ -22,6 +22,11 @@ namespace rtr {
 
         boost::optional<triangle::param_res_t> triangle::get_parameter(const physics::ray& ray) const
         {
+            if (glm::dot(ray.dir, m_normal) > 0)
+            {
+                return {};
+            }
+
             auto a_c1 = verts.a - verts.b;
             auto a_c2 = verts.a - verts.c;
             auto& a_c3 = ray.dir;
@@ -35,7 +40,7 @@ namespace rtr {
             auto param = determinant(a_c1, a_c2, b) * one_over;
             auto alpha = 1 - beta - gamma;
 
-            if (beta < -0.0001 || gamma < -0.0001 || alpha < -0.0001 || param < -0.0001)
+            if (beta < -intersection_epsilon || gamma < -intersection_epsilon || alpha < -intersection_epsilon || param < -intersection_epsilon)
             {
                 return {};
             }

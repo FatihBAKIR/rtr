@@ -23,6 +23,7 @@ class sphere
 
     glm::mat4 inv_transform;
     glm::mat4 transform;
+    int m_id;
 
 public:
 
@@ -52,6 +53,14 @@ public:
     physics::ray_hit intersect(const physics::ray& ray, float parameter, const data_t& data) const;
 
     physics::aabb bounding_box() const;
+
+    void set_id(int id)
+    {
+        m_id = id;
+    }
+    int get_id() const {
+        return m_id;
+    }
 };
 }
 }

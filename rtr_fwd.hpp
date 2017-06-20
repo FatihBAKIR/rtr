@@ -2,6 +2,8 @@
 // Created by Mehmet Fatih BAKIR on 26/02/2017.
 //
 
+#pragma once
+
 #include <boost/container/container_fwd.hpp>
 
 namespace rtr {
@@ -19,6 +21,10 @@ namespace rtr {
         class mirror_material;
         class glass;
         class bump;
+        class illuminating;
+        class skybox;
+
+        template <class> class brdf_mat;
     }
 
     struct vertex;
@@ -62,4 +68,22 @@ namespace rtr {
         class area_light;
         class directional_light;
     }
+
+    namespace brdf
+    {
+        class phong;
+        class phong_modified;
+        class phong_modified_normalized;
+
+        class blinn_phong;
+        class blinn_phong_modified;
+        class blinn_phong_modified_normalized;
+
+        class torrance_sparrow;
+    }
+
+    constexpr float intersection_epsilon = 1e-4;
+    constexpr float shadow_epsilon = 6e-4;
+
+    extern thread_local int max_ms;
 }

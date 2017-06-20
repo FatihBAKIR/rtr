@@ -39,7 +39,7 @@ if (CMAKE_C_COMPILER_ID MATCHES "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -static-libgcc")
 endif()
 
-set (LIGHT_FILES lights/point_light.hpp lights/ambient_light.hpp lights/spot_light.hpp)
+set (LIGHT_FILES lights/point_light.hpp lights/ambient_light.hpp lights/spot_light.hpp materials/illuminating.cpp materials/illuminating.hpp)
 set (GEOMETRY_FILES
         geometry/mesh.hpp geometry/mesh.cpp
         geometry/sphere.hpp geometry/sphere.cpp
@@ -75,7 +75,7 @@ set (GIL_HDR_FILES gil_extension/exr/detail/color_space_traits.cpp)
 set (TEST_FILES ${GIL_HDR_FILES} ${COMMON_FILES} tests/physics/collisions.cpp tests/tests_main.cpp tests/physics/bvh_tests.cpp)
 
 set (SOURCE_FILES ${GIL_HDR_FILES} ${COMMON_FILES} main.cpp materials/toon_shading.cpp materials/toon_shading.hpp
-        materials/mirror_material.cpp materials/mirror_material.h materials/glass.cpp materials/glass.h lights/spot_light.hpp lights/area_light.hpp materials/metal.cpp materials/metal.hpp texturing/sampler.cpp texturing/sampler.hpp texturing/tex2d.cpp texturing/tex2d.hpp texturing/perlin2d.cpp texturing/perlin2d.hpp lights/directional_light.hpp materials/bump.cpp materials/bump.hpp)
+        materials/mirror_material.cpp materials/mirror_material.h materials/glass.cpp materials/glass.h lights/spot_light.hpp lights/area_light.hpp materials/metal.cpp materials/metal.hpp texturing/sampler.cpp texturing/sampler.hpp texturing/tex2d.cpp texturing/tex2d.hpp texturing/perlin2d.cpp texturing/perlin2d.hpp lights/directional_light.hpp materials/bump.cpp materials/bump.hpp brdf/phong_brdf.cpp brdf/phong_brdf.hpp materials/brdf_mat.cpp materials/brdf_mat.hpp brdf/brdf_common.hpp brdf/blinn_phong_brdf.cpp brdf/blinn_phong_brdf.hpp brdf/torrance_sparrow.cpp brdf/torrance_sparrow.hpp materials/skybox.cpp materials/skybox.hpp merge_ibl.cpp)
 
 if(MSVC)
     if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
@@ -103,6 +103,7 @@ find_package(Curses)
 find_package(assimp REQUIRED)
 find_package(TinyXML2 REQUIRED)
 find_package(GLM REQUIRED)
+find_package(OpenCV REQUIRED)
 
 set(TBB_ROOT_DIR "/home/fatih/tbb")
 set(TBB_USE_DEBUG_BUILD False)
@@ -121,6 +122,14 @@ target_include_directories(ray PUBLIC ${TINYXML2_INCLUDE_DIRS})
 
 target_include_directories(ray PUBLIC 3rd_party/gsl/include)
 target_include_directories(ray PUBLIC ${GLM_INCLUDE_DIRS})
+
+if (OpenCV_FOUND)
+    message(STATUS "Found OpenCV")
+    target_include_directories(ray PUBLIC ${OpenCV_INCLUDE_DIRS})
+    target_link_libraries(ray ${OpenCV_LIBS})
+
+    target_compile_definitions(ray PUBLIC RTR_OPENCV_SUPPORT=1)
+endif()
 
 if (assimp_FOUND)
     message(STATUS "Found assimp")
